@@ -18,9 +18,21 @@ run:
 debug:
 	uv run python -m pdb pac-man.py config.json
 
+
 clean:
-	rm -rf __pycache__ .pytest_cache .mypy_cache .venv build dist
-	find . -type d \( -name "__pycache__" -o -name "*.egg-info" \) -exec rm -rf {} +
+	@echo "==> Cleaning cache and build artifacts..."
+	rm -rf .pytest_cache
+	rm -rf .mypy_cache
+	rm -rf .coverage
+	rm -rf htmlcov
+	rm -rf dist
+	rm -rf build
+	rm -rf *.egg-info
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	find . -type d -name ".mypy_cache" -exec rm -rf {} +
+	find . -type f -name "*.egg-info" -exec rm -rf {} +
 
 lint:
 	uv run flake8 --count src/
