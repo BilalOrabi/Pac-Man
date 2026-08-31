@@ -1,4 +1,14 @@
-.PHONY: install run debug clean lint lint-strict
+.PHONY: help install run debug clean lint lint-strict
+
+help:
+	@echo "Available commands:"
+	@echo "  make install      - Install dependencies using uv"
+	@echo "  make run          - Run the Pac-Man game with config.json"
+	@echo "  make debug        - Run the game with Python debugger (pdb)"
+	@echo "  make clean        - Remove build artifacts and cache files"
+	@echo "  make lint         - Run flake8 and mypy type checking"
+	@echo "  make lint-strict  - Run strict mypy type checking"
+	@echo "  make help         - Display this help message"
 
 install:
 	uv sync
