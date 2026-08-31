@@ -1,10 +1,9 @@
 import sys
-from typing import List
 
 
 def main() -> None:
     """Main application entry point."""
-    args: List[str] = sys.argv[1:]
+    args: list[str] = sys.argv[1:]
     if len(args) != 1:
         print("Error: Invalid arguments.", file=sys.stderr)
         print("Usage: python3 pac-man.py <config.json>", file=sys.stderr)
