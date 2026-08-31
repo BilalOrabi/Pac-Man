@@ -10,8 +10,8 @@ debug:
 	uv run python -m pdb pac-man.py config.json
 
 clean:
-	rm -rf __pycache__ .pytest_cache .mypy_cache .venv build dist *.egg-info
-	find . -type d -name "__pycache__" -exec rm -rf {} +
+	rm -rf __pycache__ .pytest_cache .mypy_cache .venv build dist
+	find . -type d \( -name "__pycache__" -o -name "*.egg-info" \) -exec rm -rf {} +
 
 lint:
 	uv run flake8 --count src/
