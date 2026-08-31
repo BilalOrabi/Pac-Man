@@ -1,0 +1,27 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environments & Tools
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Package & Build artifacts
+*.egg-info/
+dist/
+build/
+*.whl
+
+# OS / Editor Specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local runtime data
+highscores.json
