@@ -7,7 +7,6 @@ help:
 	@echo "  make debug        - Run the game with Python debugger (pdb)"
 	@echo "  make clean        - Remove build artifacts and cache files"
 	@echo "  make lint         - Run flake8 and mypy type checking"
-	@echo "  make lint-strict  - Run strict mypy type checking"
 	@echo "  make help         - Display this help message"
 
 install:
@@ -26,7 +25,3 @@ clean:
 lint:
 	uv run flake8 --count src/
 	uv run mypy --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs src/
-
-lint-strict:
-	uv run flake8 src/
-	uv run mypy --strict src/
