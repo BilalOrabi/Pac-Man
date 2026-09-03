@@ -1,4 +1,4 @@
-"""Tests for the Pac-Man maze domain model."""
+"""Tests for the maze domain model."""
 
 import pytest
 
@@ -10,28 +10,24 @@ def _create_maze() -> Maze:
     cells = (
         (
             MazeCell(
-                x=0,
-                y=0,
+                position=(0, 0),
                 walls=Wall.NORTH | Wall.WEST,
                 is_solid_block=False,
             ),
             MazeCell(
-                x=1,
-                y=0,
+                position=(1, 0),
                 walls=Wall.NORTH | Wall.EAST,
                 is_solid_block=False,
             ),
         ),
         (
             MazeCell(
-                x=0,
-                y=1,
+                position=(0, 1),
                 walls=Wall.SOUTH | Wall.WEST,
                 is_solid_block=False,
             ),
             MazeCell(
-                x=1,
-                y=1,
+                position=(1, 1),
                 walls=Wall.ALL,
                 is_solid_block=True,
             ),
@@ -51,8 +47,7 @@ def _create_maze() -> Maze:
 def test_cell_has_wall() -> None:
     """MazeCell should correctly report walls."""
     cell = MazeCell(
-        x=0,
-        y=0,
+        position=(0, 0),
         walls=Wall.NORTH | Wall.WEST,
         is_solid_block=False,
     )
@@ -69,6 +64,7 @@ def test_maze_get_cell() -> None:
 
     cell = maze.get_cell((1, 0))
 
+    assert cell.position == (1, 0)
     assert cell.x == 1
     assert cell.y == 0
 
@@ -88,7 +84,7 @@ def test_maze_is_inside() -> None:
     assert maze.is_inside(0, 0)
     assert maze.is_inside(1, 1)
     assert not maze.is_inside(2, 0)
-    assert not maze.is_inside(-1, 0)
+    assert not maze.is_inside(0, 2)
 
 
 def test_maze_is_walkable() -> None:
