@@ -1,0 +1,12 @@
+# Set the default behavior to handle all files as text and enforce LF
+* text=auto eol=lf
+
+# Explicitly declare files that must always use LF
+*.py text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.lock text eol=lf
+
+# Keep Makefiles strict (they often break with CRLF)
+Makefile text eol=lf
