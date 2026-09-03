@@ -37,14 +37,27 @@ class ReturnHomeBehavior:
             )
 
         possible_directions = (
-            (Direction.UP, (0, -1)),
-            (Direction.DOWN, (0, 1)),
             (Direction.LEFT, (-1, 0)),
             (Direction.RIGHT, (1, 0)),
+            (Direction.DOWN, (0, 1)),
+            (Direction.UP, (0, -1)),
         )
+
+        preferred_direction = Direction.NONE
+
+        if home_position[0] < ghost_position[0]:
+
+            preferred_direction = Direction.LEFT
+        elif home_position[0] > ghost_position[0]:
+            preferred_direction = Direction.RIGHT
+        elif home_position[1] < ghost_position[1]:
+            preferred_direction = Direction.UP
+        elif home_position[1] > ghost_position[1]:
+            preferred_direction = Direction.DOWN
 
         best_direction = Direction.NONE
         shortest_distance = float("inf")
+        preferred_distance = False
 
         for direction, (horizontal_change, vertical_change) in (
             possible_directions
@@ -62,8 +75,15 @@ class ReturnHomeBehavior:
                 + abs(candidate_position[1] - home_position[1])
             )
 
-            if distance < shortest_distance:
+            is_preferred = direction is preferred_direction
+
+            if distance < shortest_distance or (
+                distance == shortest_distance
+                and is_preferred
+                and not preferred_distance
+            ):
                 shortest_distance = distance
                 best_direction = direction
+                preferred_distance = is_preferred
 
         return best_direction

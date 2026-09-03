@@ -32,14 +32,26 @@ class FleeBehavior:
             )
 
         possible_directions = (
-            (Direction.UP, (0, -1)),
-            (Direction.DOWN, (0, 1)),
             (Direction.LEFT, (-1, 0)),
             (Direction.RIGHT, (1, 0)),
+            (Direction.DOWN, (0, 1)),
+            (Direction.UP, (0, -1)),
         )
+
+        preferred_direction = Direction.NONE
+
+        if target_position[0] < ghost_position[0]:
+            preferred_direction = Direction.RIGHT
+        elif target_position[0] > ghost_position[0]:
+            preferred_direction = Direction.LEFT
+        elif target_position[1] < ghost_position[1]:
+            preferred_direction = Direction.DOWN
+        elif target_position[1] > ghost_position[1]:
+            preferred_direction = Direction.UP
 
         best_direction = Direction.NONE
         greatest_distance = float("-inf")
+        preferred_distance = False
 
         for direction, (horizontal_change, vertical_change) in (
             possible_directions
@@ -57,8 +69,15 @@ class FleeBehavior:
                 + abs(candidate_position[1] - target_position[1])
             )
 
-            if distance > greatest_distance:
+            is_preferred = direction is preferred_direction
+
+            if distance > greatest_distance or (
+                distance == greatest_distance
+                and is_preferred
+                and not preferred_distance
+            ):
                 greatest_distance = distance
                 best_direction = direction
+                preferred_distance = is_preferred
 
         return best_direction
