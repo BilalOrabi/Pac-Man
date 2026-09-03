@@ -4,7 +4,7 @@ from src.config.game_config import LevelConfig
 from src.maze.maze import Maze, MazeCell, Wall
 from src.world.level import Level
 from src.world.level_factory import LevelFactory
-
+import pytest
 
 class FakeMazeAdapter:
     """Provide predictable maze generation for factory tests."""
