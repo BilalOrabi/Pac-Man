@@ -3,14 +3,17 @@ name = "pacman"
 version = "0.1.0"
 description = "Pac-Man implementation in Python"
 readme = "README.md"
+
 authors = [
     { name = "borabi" },
     { name = "hqasqas" }
 ]
+
 requires-python = ">=3.10"
+
 dependencies = [
     "pygame>=2.6.1",
-    "mazegenerator @ file:./libs/mazegenerator-2.1.0-py3-none-any.whl",
+    "mazegenerator",
 ]
 
 [build-system]
@@ -23,6 +26,9 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+mazegenerator = { path = "libs/mazegenerator-2.1.0-py3-none-any.whl" }
 
 [dependency-groups]
 dev = [
