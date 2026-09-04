@@ -57,7 +57,7 @@ def test_non_movement_action_does_not_change_direction() -> None:
 
 
 def test_update_moves_player_through_collision_system() -> None:
-    """Updating the controller should move the player through collision checks."""
+    """Update should move player through collision checks."""
     player = Mock(spec=Player)
     player.direction = Direction.RIGHT
     player.position = (1, 1)
@@ -72,8 +72,7 @@ def test_update_moves_player_through_collision_system() -> None:
         player=player,
         collision_system=collision_system,
     )
-
-    controller.update(maze)
+    controller.update(maze)
 
     collision_system.move_if_valid.assert_called_once_with(
         player,
@@ -82,7 +81,7 @@ def test_update_moves_player_through_collision_system() -> None:
     )
 
 
-def test_update_does_not_require_player_to_move_when_direction_is_none() -> None:
+def test_update_keeps_player_in_place_when_direction_is_none() -> None:
     """A player with no movement direction should remain in place."""
     player = Mock(spec=Player)
     player.direction = Direction.NONE
@@ -105,3 +104,46 @@ def test_update_does_not_require_player_to_move_when_direction_is_none() -> None
         (1, 1),
         maze,
     )
+
+
+def test_instant_turnaround_inverts_progress_and_swaps_positions() -> None:
+    """Reversing direction mid-corridor should immediately invert progress."""
+    player = Player(
+        position=(5, 5),
+        direction=Direction.RIGHT,
+        target_position=(6, 5),
+        movement_progress=0.4,
+    )
+    collision_system = Mock(spec=CollisionSystem)
+    controller = PlayerController(
+        player=player,
+        collision_system=collision_system,
+    )
+
+    controller.handle_action(InputAction.MOVE_LEFT)
+
+    assert player.direction is Direction.LEFT
+    assert player.position == (6, 5)
+    assert player.target_position == (5, 5)
+    assert abs(player.movement_progress - 0.6) < 1e-6
+
+
+def test_edge_wall_turnaround_resets_progress_cleanly() -> None:
+    """Reversing when stopped against an edge wall starts a clean step."""
+    player = Player(
+        position=(0, 5),
+        direction=Direction.LEFT,
+        target_position=None,
+        movement_progress=0.0,
+    )
+    collision_system = Mock(spec=CollisionSystem)
+    controller = PlayerController(
+        player=player,
+        collision_system=collision_system,
+    )
+
+    controller.handle_action(InputAction.MOVE_RIGHT)
+
+    assert player.direction is Direction.RIGHT
+    assert player.target_position is None
+    assert player.movement_progress == 0.0

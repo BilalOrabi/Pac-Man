@@ -200,3 +200,87 @@ def test_flee_uses_deterministic_tie_breaking() -> None:
     )
 
     assert direction is Direction.LEFT
+
+
+def test_flee_obeys_no_reverse_rule_at_junction() -> None:
+    """Flee should not reverse direction if an alternative is open."""
+    maze = create_open_maze()
+
+    # Target is to the RIGHT (3, 2). Moving LEFT maximizes distance.
+    # But if ghost is already moving RIGHT, LEFT is forbidden at this junction.
+    direction = FleeBehavior.get_direction_away_from_target(
+        maze=maze,
+        ghost_position=(2, 2),
+        target_position=(3, 2),
+        current_direction=Direction.RIGHT,
+    )
+
+    assert direction != Direction.LEFT
+    assert direction in (Direction.UP, Direction.DOWN, Direction.RIGHT)
+
+
+def test_flee_reverses_at_dead_end() -> None:
+    """Flee should reverse if all other directions are blocked."""
+    cells = [
+        [
+            MazeCell(
+                position=(x, y),
+                walls=Wall.ALL,
+                is_solid_block=True,
+            )
+            for x in range(3)
+        ]
+        for y in range(3)
+    ]
+    # Make a dead-end corridor: (0, 1) <-> (1, 1), blocked everywhere else
+    cells[1][0] = MazeCell((0, 1), Wall.NONE, False)
+    cells[1][1] = MazeCell((1, 1), Wall.NONE, False)
+
+    maze = Maze(
+        width=3,
+        height=3,
+        cells=tuple(tuple(row) for row in cells),
+        entry=(0, 1),
+        exit=(1, 1),
+        shortest_path="",
+    )
+
+    # Ghost is at (1, 1) after moving RIGHT from (0, 1). Only LEFT is open.
+    direction = FleeBehavior.get_direction_away_from_target(
+        maze=maze,
+        ghost_position=(1, 1),
+        target_position=(0, 1),
+        current_direction=Direction.RIGHT,
+    )
+
+    assert direction is Direction.LEFT
+
+
+def test_flee_reverses_in_corridor_when_facing_target() -> None:
+    """Fleeing ghost facing target in a corridor must turn around to escape."""
+    # Horizontal corridor: y=1 is open for x=0..4, y=0 and y=2 are solid walls
+    cells = []
+    for y in range(3):
+        row = []
+        for x in range(5):
+            is_wall = (y != 1)
+            row.append(
+                MazeCell(
+                    (x, y),
+                    Wall.ALL if is_wall else Wall.NONE,
+                    is_wall,
+                )
+            )
+        cells.append(tuple(row))
+    maze = Maze(5, 3, tuple(cells), (0, 1), (4, 1), "")
+
+    # Ghost is at (2, 1) heading RIGHT towards target at (4, 1).
+    # Moving RIGHT approaches target. LEFT flees away.
+    direction = FleeBehavior.get_direction_away_from_target(
+        maze=maze,
+        ghost_position=(2, 1),
+        target_position=(4, 1),
+        current_direction=Direction.RIGHT,
+    )
+
+    assert direction is Direction.LEFT

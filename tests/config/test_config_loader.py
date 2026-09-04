@@ -126,3 +126,53 @@ def test_loader_rejects_non_numeric_gameplay_value(tmp_path) -> None:
 
     with pytest.raises(ConfigError):
         ConfigLoader.load(configuration_path)
+
+
+def test_loader_ignores_comments_in_json(tmp_path) -> None:
+    """The loader should ignore lines starting with # or //."""
+    content = """
+    # This is a comment at top
+    {
+        // Inline comment style
+        "highscore_filename": "scores.json",
+        "lives": 5,
+        "pacgum": 30,
+        "points_per_pacgum": 15,
+        "points_per_super_pacgum": 60,
+        "points_per_ghost": 300,
+        "seed": 99,
+        "level_max_time": 100,
+        "player_speed": 4.5,
+        "ghost_speed": 3.5,
+        "frightened_ghost_speed": 2.0,
+        "returning_ghost_speed": 5.0,
+        "power_mode_duration": 6.0,
+        "levels": [{"width": 10, "height": 10}]
+    }
+    # End comment
+    """
+    config_path = tmp_path / "config_with_comments.json"
+    config_path.write_text(content, encoding="utf-8")
+
+    config = ConfigLoader.load(config_path)
+    assert config.lives == 5
+    assert config.points_per_pacgum == 15
+
+
+def test_loader_safe_defaults_clamping(tmp_path) -> None:
+    """The safe loader should clamp missing or invalid values to defaults."""
+    content = """
+    {
+        "unknown_key_ignored": 12345,
+        "lives": -5
+    }
+    """
+    config_path = tmp_path / "broken_config.json"
+    config_path.write_text(content, encoding="utf-8")
+
+    config = ConfigLoader.load(config_path, fallback_to_defaults=True)
+    assert config.lives == ConfigLoader.DEFAULT_LIVES
+    assert config.player_speed == ConfigLoader.DEFAULT_PLAYER_SPEED
+    def_hs = ConfigLoader.DEFAULT_HIGHSCORE_FILENAME
+    assert config.highscore_filename == def_hs
+    assert len(config.levels) == 10

@@ -31,3 +31,4 @@ class Ghost(Entity):
     ghost_type: GhostType
     home_position: Coordinate
     state: GhostState = GhostState.CHASE
+    respawn_cooldown: float = 0.0

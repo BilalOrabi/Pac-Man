@@ -135,3 +135,76 @@ def test_reset_level_deactivates_power_mode() -> None:
     )
 
     assert controller.power_mode_system.is_active is False
+
+
+def test_ghost_respawn_cooldown_delays_chase_by_five_seconds() -> None:
+    """Ghost with respawn_cooldown > 0 should not chase until 5s elapse."""
+    from src.entities.ghost import Ghost, GhostState, GhostType
+    controller = create_gameplay_controller()
+    ghost = Ghost(
+        ghost_type=GhostType.RED,
+        position=(0, 0),
+        home_position=(0, 0),
+        state=GhostState.RETURN_HOME,
+        respawn_cooldown=5.0,
+    )
+    ghost_ctrl = Mock()
+    ghost_ctrl.ghost = ghost
+    controller.ghost_controllers = [ghost_ctrl]
+
+    level = create_level()
+
+    # Advance 3.0s -> 2.0s cooldown remains, state is still RETURN_HOME
+    controller.update(level, 3.0)
+    assert ghost.respawn_cooldown == pytest.approx(2.0)
+    assert ghost.state is GhostState.RETURN_HOME
+
+    # Advance remaining 2.0s -> cooldown expires, state transitions to CHASE
+    controller.update(level, 2.0)
+    assert ghost.respawn_cooldown == 0.0
+    assert ghost.state is GhostState.CHASE
+
+
+def test_reset_level_synchronizes_lives_system() -> None:
+    """Resetting the level should update lives_system with player lives."""
+    controller = create_gameplay_controller()
+    level = create_level()
+    mock_player = Mock()
+    mock_player.lives = 5
+    level.player = mock_player
+
+    controller.reset_level(level)
+
+    assert controller.lives_system.remaining_lives == 5
+
+
+def test_update_passes_personality_chase_target() -> None:
+    """Updating ghosts in chase mode should pass personality targets."""
+    from src.entities.direction import Direction
+    from src.entities.ghost import Ghost, GhostState, GhostType
+    from src.entities.player import Player
+
+    controller = create_gameplay_controller()
+    pinky = Ghost(
+        ghost_type=GhostType.PINK,
+        position=(18, 1),
+        home_position=(18, 1),
+        speed=1.8214,
+        state=GhostState.CHASE,
+    )
+    ghost_ctrl = Mock()
+    ghost_ctrl.ghost = pinky
+    controller.ghost_controllers = [ghost_ctrl]
+
+    player = Player(position=(10, 10), direction=Direction.UP)
+    level = create_level()
+    level.player = player
+    level.ghosts = [pinky]
+
+    controller.update(level, 1.0)
+
+    # 4 tiles ahead of (10, 10) facing UP is (10, 6)
+    assert ghost_ctrl.update.call_count >= 1
+    call_args = ghost_ctrl.update.call_args[0]
+    assert call_args[0] == level.maze
+    assert call_args[1] == (10, 6)

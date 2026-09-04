@@ -1,14 +1,30 @@
 {
-  "# Level Configuration": "Main level timing and game settings",
+  # Lines starting with # are comments and will be ignored by ConfigLoader # 1.0714
   "highscore_filename": "highscores.json",
   "lives": 3,
-  "pacgum": 42,
+  "pacgum": 120,
   "points_per_pacgum": 10,
   "points_per_super_pacgum": 50,
   "points_per_ghost": 200,
   "seed": 42,
-  "level_max_time": 90,
+  "level_max_time": 999,
+  # Movement speeds (permanently locked in engine code to guarantee smooth 60 FPS movement and animations)
+  "player_speed": 2.1429,
+  "ghost_speed": 1.8214,
+  "frightened_ghost_speed": 10,
+  "returning_ghost_speed": 3.5,
+  "power_mode_duration": 7.0,
   "levels": [
+    { "width": 10, "height": 12 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
     { "width": 19, "height": 21 }
   ]
 }
+

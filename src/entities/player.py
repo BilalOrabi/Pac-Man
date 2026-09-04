@@ -41,3 +41,5 @@ class Player(Entity):
         """Move the player back to a specified position."""
         self.position = position
         self.direction = Direction.NONE
+        self.target_position = None
+        self.movement_progress = 0.0

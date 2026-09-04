@@ -17,8 +17,13 @@ class CollisionSystem:
         if not maze.is_inside(*target_position):
             return False
 
-        target_cell = maze.get_cell(target_position)
+        if entity.position == target_position:
+            return False
 
+        if maze.is_inside(*entity.position):
+            return maze.can_move(entity.position, target_position)
+
+        target_cell = maze.get_cell(target_position)
         return not target_cell.is_solid_block
 
     @staticmethod
@@ -41,3 +46,25 @@ class CollisionSystem:
 
         entity.position = target_position
         return True
+
+    @staticmethod
+    def check_entity_collision(
+        entity_a: Entity,
+        entity_b: Entity,
+    ) -> bool:
+        """Return whether two entities collide."""
+        if entity_a.position == entity_b.position:
+            return True
+
+        pos_fn_a = getattr(entity_a, "get_visual_position", None)
+        pos_fn_b = getattr(entity_b, "get_visual_position", None)
+        if callable(pos_fn_a) and callable(pos_fn_b):
+            va = pos_fn_a()
+            vb = pos_fn_b()
+            if (round(va[0]), round(va[1])) == (round(vb[0]), round(vb[1])):
+                return True
+            dx = va[0] - vb[0]
+            dy = va[1] - vb[1]
+            return bool((dx * dx + dy * dy) < 0.36)
+
+        return False

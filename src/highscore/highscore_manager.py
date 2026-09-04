@@ -27,10 +27,23 @@ class HighscoreManager:
 
         self._sort_entries()
 
+    @staticmethod
+    def validate_player_name(player_name: str) -> bool:
+        """Validate player name is 1-10 chars, alphanumeric and spaces."""
+        if not isinstance(player_name, str):
+            return False
+        if not player_name or len(player_name) > 10:
+            return False
+        if not player_name.strip():
+            return False
+        return all(c.isalnum() or c == " " for c in player_name)
+
     def add_score(self, player_name: str, score: int) -> None:
         """Add a score and keep the leaderboard ordered."""
-        if not player_name.strip():
-            raise ValueError("player_name cannot be empty.")
+        if not self.validate_player_name(player_name):
+            raise ValueError(
+                "player_name must be 1 to 10 alphanumeric/space chars."
+            )
 
         if score < 0:
             raise ValueError("score cannot be negative.")

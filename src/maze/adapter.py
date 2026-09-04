@@ -17,7 +17,7 @@ class MazeAdapter:
         width: int,
         height: int,
         seed: int,
-        entry_cell: Coordinate = (0, 0),
+        entry_cell: Coordinate | None = None,
         exit_cell: Coordinate | None = None,
     ) -> Maze:
         """Generate a maze and convert it into a project domain model.
@@ -38,8 +38,13 @@ class MazeAdapter:
             ValueError: If the requested dimensions or coordinates are invalid.
         """
         self._validate_dimensions(width, height)
+        actual_entry = (
+            entry_cell
+            if entry_cell is not None
+            else (width // 2, height // 2)
+        )
         self._validate_coordinate(
-            entry_cell,
+            actual_entry,
             width,
             height,
             "entry",
@@ -58,7 +63,7 @@ class MazeAdapter:
                 width=width,
                 height=height,
                 seed=seed,
-                entry_cell=entry_cell,
+                entry_cell=actual_entry,
                 exit_cell=exit_cell,
             )
 

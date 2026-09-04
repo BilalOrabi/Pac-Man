@@ -799,6 +799,61 @@ Always preserve this distinction:
 ```
 
 **Pygame displays the game.  
+
 Pygame does not define the game.**
 
 That is the project's primary architectural rule.
+
+
+
+AssetManager
+
+AssetManager is the centralized access point for presentation assets.
+
+It should provide access to:
+
+Background
+Player sprite
+Ghost sprites
+Fonts
+Music
+Sound effects
+Visual effects
+
+Example API:
+
+asset_manager.get_background()
+asset_manager.get_player_sprite()
+asset_manager.get_ghost_sprite(...)
+asset_manager.get_font(...)
+asset_manager.get_music(...)
+asset_manager.get_sound(...)
+asset_manager.get_effect(...)
+
+Renderers should use AssetManager instead of directly constructing asset paths.
+
+Gameplay classes must not load assets.
+
+Theme and Asset Separation
+
+Visual configuration should be centralized.
+
+Changing the visual theme should primarily require changing:
+
+theme configuration
+asset paths
+assets themselves
+
+and should NOT require modifying:
+
+Player
+Ghost
+Level
+GameplayController
+CollisionSystem
+MovementSystem
+Ghost AI
+ScoringSystem
+LivesSystem
+
+The architecture should support future themes without rewriting gameplay.

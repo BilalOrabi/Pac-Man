@@ -3,6 +3,8 @@
 import pytest
 
 from src.config.game_config import LevelConfig
+from src.entities.ghost import Ghost, GhostType
+from src.entities.player import Player
 from src.maze.maze import Maze, MazeCell, Wall
 from src.world.level import Level
 
@@ -48,11 +50,26 @@ def create_test_maze() -> Maze:
 
 def create_test_level() -> Level:
     """Create a level with predictable test data."""
+    maze = create_test_maze()
+
     return Level(
         number=1,
         configuration=LevelConfig(width=2, height=2),
-        maze=create_test_maze(),
+        maze=maze,
         remaining_pacgums=3,
+        player=Player(
+            position=maze.entry,
+            speed=5.0,
+            lives=3,
+        ),
+        ghosts=[
+            Ghost(
+                position=maze.entry,
+                ghost_type=GhostType.RED,
+                home_position=maze.entry,
+                speed=4.0,
+            )
+        ],
     )
 
 
@@ -172,3 +189,17 @@ def test_reset_timer_sets_elapsed_time_to_zero() -> None:
     level.reset_timer()
 
     assert level.elapsed_level_time == 0.0
+
+
+def test_consume_pacgum_at_completes_level_when_pacgums_cleared() -> None:
+    """Consuming all pacgums in the set should complete the level."""
+    level = create_test_level()
+    level.pacgums = {(1, 0)}
+    level.super_pacgums = {(0, 0)}
+    level.remaining_pacgums = 2
+
+    pellet_type = level.consume_pacgum_at((1, 0))
+
+    assert pellet_type == "pacgum"
+    assert len(level.pacgums) == 0
+    assert level.completed

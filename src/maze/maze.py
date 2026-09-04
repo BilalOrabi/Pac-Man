@@ -71,9 +71,56 @@ class Maze:
         """Return whether the coordinates are inside the maze."""
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def is_walkable(self, position: Coordinate) -> bool:
+    def can_move(
+        self,
+        from_position: Coordinate,
+        to_position: Coordinate,
+    ) -> bool:
+        """Return whether movement between adjacent cells is permitted."""
+        if (
+            not self.is_inside(*from_position)
+            or not self.is_inside(*to_position)
+        ):
+            return False
+
+        from_cell = self.get_cell(from_position)
+        to_cell = self.get_cell(to_position)
+
+        if from_cell.is_solid_block or to_cell.is_solid_block:
+            return False
+
+        delta_x = to_position[0] - from_position[0]
+        delta_y = to_position[1] - from_position[1]
+
+        if delta_x == 1 and delta_y == 0:
+            east_blocked = from_cell.has_wall(Wall.EAST)
+            west_blocked = to_cell.has_wall(Wall.WEST)
+            return not (east_blocked or west_blocked)
+        if delta_x == -1 and delta_y == 0:
+            west_blocked = from_cell.has_wall(Wall.WEST)
+            east_blocked = to_cell.has_wall(Wall.EAST)
+            return not (west_blocked or east_blocked)
+        if delta_x == 0 and delta_y == 1:
+            south_blocked = from_cell.has_wall(Wall.SOUTH)
+            north_blocked = to_cell.has_wall(Wall.NORTH)
+            return not (south_blocked or north_blocked)
+        if delta_x == 0 and delta_y == -1:
+            north_blocked = from_cell.has_wall(Wall.NORTH)
+            south_blocked = to_cell.has_wall(Wall.SOUTH)
+            return not (north_blocked or south_blocked)
+
+        return True
+
+    def is_walkable(
+        self,
+        position: Coordinate,
+        from_position: Coordinate | None = None,
+    ) -> bool:
         """Return whether a position can be occupied by an entity."""
         if not self.is_inside(*position):
             return False
+
+        if from_position is not None:
+            return self.can_move(from_position, position)
 
         return not self.get_cell(position).is_solid_block

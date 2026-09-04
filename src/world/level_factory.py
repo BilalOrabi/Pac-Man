@@ -1,16 +1,26 @@
 """Factory for constructing playable Pac-Man levels."""
 
-from src.config.game_config import LevelConfig
+import random
+
+from src.config.game_config import GameConfig, LevelConfig
+from src.entities.ghost import Ghost, GhostType
+from src.entities.player import Player
 from src.maze.adapter import MazeAdapter
+from src.maze.maze import Maze
 from src.world.level import Level
 
 
 class LevelFactory:
-    """Create Level objects from validated level configuration."""
+    """Create Level objects and their runtime entities."""
 
-    def __init__(self, maze_adapter: MazeAdapter) -> None:
-        """Initialize the level factory with a maze adapter."""
+    def __init__(
+        self,
+        maze_adapter: MazeAdapter,
+        game_configuration: GameConfig,
+    ) -> None:
+        """Initialize the factory with maze and game configuration."""
         self.maze_adapter = maze_adapter
+        self.game_configuration = game_configuration
 
     def create_level(
         self,
@@ -19,21 +29,7 @@ class LevelFactory:
         maze_seed: int,
         pacgum_count: int,
     ) -> Level:
-        """Create a playable level from its configuration.
-
-        Args:
-            level_number: One-based number identifying the level.
-            level_configuration: Dimensions and settings for the level.
-            maze_seed: Seed used to generate the maze.
-            pacgum_count: Number of pacgums placed in the level.
-
-        Returns:
-            A newly constructed Level.
-
-        Raises:
-            ValueError: If the level number or pacgum count is invalid.
-            MazeGenerationError: If maze generation fails.
-        """
+        """Create a complete playable level."""
         if level_number <= 0:
             raise ValueError(
                 "Level number must be greater than zero."
@@ -50,9 +46,84 @@ class LevelFactory:
             seed=maze_seed,
         )
 
+        player = self._create_player(maze)
+
+        ghosts = self._create_ghosts(maze)
+
+        corners = {
+            (0, 0),
+            (maze.width - 1, 0),
+            (0, maze.height - 1),
+            (maze.width - 1, maze.height - 1),
+        }
+        super_pacgums = {
+            c for c in corners
+            if maze.is_inside(*c) and not maze.get_cell(c).is_solid_block
+        }
+        walkable = [
+            (x, y)
+            for y in range(maze.height)
+            for x in range(maze.width)
+            if not maze.get_cell((x, y)).is_solid_block
+            and (x, y) not in super_pacgums
+            and (x, y) != player.position
+        ]
+        target_regular = max(0, pacgum_count - len(super_pacgums))
+        rng = random.Random(maze_seed)
+        if 0 < target_regular < len(walkable):
+            pacgums = set(rng.sample(walkable, target_regular))
+        elif target_regular >= len(walkable):
+            pacgums = set(walkable)
+        else:
+            pacgums = set()
+
+        total_pacgums = (
+            len(pacgums) + len(super_pacgums)
+            if (pacgums or super_pacgums)
+            else pacgum_count
+        )
+
         return Level(
             number=level_number,
             configuration=level_configuration,
             maze=maze,
-            remaining_pacgums=pacgum_count,
+            remaining_pacgums=total_pacgums,
+            player=player,
+            ghosts=ghosts,
+            pacgums=pacgums,
+            super_pacgums=super_pacgums,
         )
+
+    def _create_player(self, maze: Maze) -> Player:
+        """Create the player at the maze entry."""
+        return Player(
+            position=maze.entry,
+            speed=self.game_configuration.player_speed,
+            lives=self.game_configuration.lives,
+        )
+
+    def _create_ghosts(self, maze: Maze) -> list[Ghost]:
+        """Create the four standard ghosts in the 4 corners of the maze."""
+        corners = (
+            (0, 0),
+            (maze.width - 1, 0),
+            (0, maze.height - 1),
+            (maze.width - 1, maze.height - 1),
+        )
+
+        ghost_types = (
+            GhostType.RED,
+            GhostType.PINK,
+            GhostType.BLUE,
+            GhostType.ORANGE,
+        )
+
+        return [
+            Ghost(
+                position=corner,
+                ghost_type=ghost_type,
+                home_position=corner,
+                speed=self.game_configuration.ghost_speed,
+            )
+            for corner, ghost_type in zip(corners, ghost_types)
+        ]

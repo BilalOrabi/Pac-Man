@@ -44,6 +44,7 @@ def create_game_coordinator() -> GameCoordinator:
     maze_adapter = MazeAdapter()
     level_factory = LevelFactory(
         maze_adapter=maze_adapter,
+        game_configuration=game_configuration,
     )
 
     game_world = GameWorld(
@@ -66,9 +67,7 @@ def test_start_game_creates_real_level_and_enters_playing() -> None:
     """Starting the game should create a real level and enter PLAYING."""
     coordinator = create_game_coordinator()
 
-    coordinator.handle_action(
-    InputAction.START_GAME
-)
+    coordinator.handle_action(InputAction.START_GAME)
 
     assert (
         coordinator.state_machine.current_state

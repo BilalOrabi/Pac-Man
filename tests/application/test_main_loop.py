@@ -196,4 +196,4 @@ def test_run_once_updates_and_renders() -> None:
     main_loop.run_once(1.0)
 
     coordinator.update.assert_called_once_with(1.0)
-    coordinator.render.assert_called_once()
+    coordinator.render.assert_called_once()

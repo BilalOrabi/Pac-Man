@@ -189,3 +189,57 @@ def test_chase_uses_deterministic_tie_breaking() -> None:
     )
 
     assert direction is Direction.RIGHT
+
+
+def test_chase_obeys_no_reverse_rule_at_junction() -> None:
+    """Chase should not reverse direction if an alternative is open."""
+    maze = create_open_maze()
+
+    # Target is directly behind the ghost (LEFT).
+    # Since ghost is moving RIGHT, LEFT is forbidden at this junction.
+    direction = ChaseBehavior.get_direction_toward_target(
+        maze=maze,
+        ghost_position=(2, 2),
+        target_position=(0, 2),
+        current_direction=Direction.RIGHT,
+    )
+
+    assert direction != Direction.LEFT
+    assert direction in (Direction.UP, Direction.DOWN, Direction.RIGHT)
+
+
+def test_chase_reverses_at_dead_end() -> None:
+    """Chase should reverse if all other directions are blocked."""
+    cells = [
+        [
+            MazeCell(
+                position=(x, y),
+                walls=Wall.ALL,
+                is_solid_block=True,
+            )
+            for x in range(3)
+        ]
+        for y in range(3)
+    ]
+    # Make a dead-end corridor: (0, 1) <-> (1, 1), blocked everywhere else
+    cells[1][0] = MazeCell((0, 1), Wall.NONE, False)
+    cells[1][1] = MazeCell((1, 1), Wall.NONE, False)
+
+    maze = Maze(
+        width=3,
+        height=3,
+        cells=tuple(tuple(row) for row in cells),
+        entry=(0, 1),
+        exit=(1, 1),
+        shortest_path="",
+    )
+
+    # Ghost is at (1, 1) after moving RIGHT from (0, 1). Only LEFT is open.
+    direction = ChaseBehavior.get_direction_toward_target(
+        maze=maze,
+        ghost_position=(1, 1),
+        target_position=(2, 1),
+        current_direction=Direction.RIGHT,
+    )
+
+    assert direction is Direction.LEFT

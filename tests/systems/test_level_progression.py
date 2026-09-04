@@ -3,6 +3,8 @@
 import pytest
 
 from src.config.game_config import GameConfig, LevelConfig
+from src.entities.ghost import Ghost, GhostType
+from src.entities.player import Player
 from src.maze.maze import Maze, MazeCell, Wall
 from src.systems.level_progression import (
     LevelProgressionResult,
@@ -38,11 +40,33 @@ class FakeLevelFactory:
             shortest_path="",
         )
 
+        player = Player(
+            position=maze.entry,
+            speed=5.0,
+            lives=3,
+        )
+        ghosts = [
+            Ghost(
+                position=maze.entry,
+                ghost_type=ghost_type,
+                home_position=maze.entry,
+                speed=4.0,
+            )
+            for ghost_type in (
+                GhostType.RED,
+                GhostType.PINK,
+                GhostType.BLUE,
+                GhostType.ORANGE,
+            )
+        ]
+
         return Level(
             number=level_number,
             configuration=level_configuration,
             maze=maze,
             remaining_pacgums=pacgum_count,
+            player=player,
+            ghosts=ghosts,
         )
 
 
@@ -89,7 +113,7 @@ def test_progress_returns_level_not_completed_when_level_is_active() -> None:
     assert game_world.current_level_index == 0
 
 
-def test_progress_advances_to_next_level_when_current_level_is_completed() -> None:
+def test_progress_advances_when_level_is_completed() -> None:
     """Progression should create the next level after completion."""
     game_world = create_game_world()
     current_level = game_world.start()

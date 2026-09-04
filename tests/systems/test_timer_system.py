@@ -3,6 +3,8 @@
 import pytest
 
 from src.config.game_config import LevelConfig
+from src.entities.ghost import Ghost, GhostType
+from src.entities.player import Player
 from src.maze.maze import Maze, MazeCell, Wall
 from src.systems.timer_system import TimerSystem
 from src.world.level import Level
@@ -33,6 +35,19 @@ def create_test_level() -> Level:
         ),
         maze=maze,
         remaining_pacgums=10,
+        player=Player(
+            position=maze.entry,
+            speed=5.0,
+            lives=3,
+        ),
+        ghosts=[
+            Ghost(
+                position=maze.entry,
+                ghost_type=GhostType.RED,
+                home_position=maze.entry,
+                speed=4.0,
+            )
+        ],
     )
 
 

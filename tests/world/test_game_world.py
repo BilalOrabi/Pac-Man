@@ -5,7 +5,7 @@ from src.maze.maze import Maze, MazeCell, Wall
 from src.world.game_world import GameWorld
 from src.world.level import Level
 from src.world.level_factory import LevelFactory
-import pytest
+
 
 class FakeMazeAdapter:
     """Provide predictable maze generation for world tests."""
@@ -65,11 +65,15 @@ def create_game_configuration() -> GameConfig:
 
 def create_game_world() -> GameWorld:
     """Create a GameWorld with predictable dependencies."""
+    game_configuration = create_game_configuration()
     maze_adapter = FakeMazeAdapter()
-    level_factory = LevelFactory(maze_adapter)
+    level_factory = LevelFactory(
+        maze_adapter,
+        game_configuration=game_configuration,
+    )
 
     return GameWorld(
-        game_configuration=create_game_configuration(),
+        game_configuration=game_configuration,
         level_factory=level_factory,
     )
 
@@ -190,3 +194,18 @@ def test_world_is_complete_when_final_level_is_completed() -> None:
     game_world.current_level.completed = True
 
     assert game_world.has_completed_all_levels()
+
+
+def test_advance_to_next_level_preserves_player_score_and_lives() -> None:
+    """Player score and remaining lives should carry over to the next level."""
+    game_world = create_game_world()
+
+    current_level = game_world.start()
+    current_level.player.score = 2450
+    current_level.player.lives = 2
+
+    next_level = game_world.advance_to_next_level()
+
+    assert next_level is not None
+    assert next_level.player.score == 2450
+    assert next_level.player.lives == 2

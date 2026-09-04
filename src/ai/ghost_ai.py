@@ -31,13 +31,21 @@ class GhostAI:
         ghost_position: Coordinate,
         target_position: Coordinate,
         home_position: Coordinate,
+        current_direction: Direction = Direction.NONE,
     ) -> Direction:
         """Calculate the next direction according to the current mode."""
+        cur_dir = (
+            current_direction
+            if current_direction is not Direction.NONE
+            else self.current_direction
+        )
+
         if self.current_mode is GhostMode.CHASE:
             return ChaseBehavior.get_direction_toward_target(
                 maze=maze,
                 ghost_position=ghost_position,
                 target_position=target_position,
+                current_direction=cur_dir,
             )
 
         if self.current_mode is GhostMode.FLEE:
@@ -45,6 +53,7 @@ class GhostAI:
                 maze=maze,
                 ghost_position=ghost_position,
                 target_position=target_position,
+                current_direction=cur_dir,
             )
 
         if self.current_mode is GhostMode.RETURN_HOME:

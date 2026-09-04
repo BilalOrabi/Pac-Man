@@ -19,19 +19,25 @@ class ChaseBehavior:
         maze: Maze,
         ghost_position: Coordinate,
         target_position: Coordinate,
+        current_direction: Direction = Direction.NONE,
     ) -> Direction:
-        """Return the walkable direction closest to the target.
-
-        When multiple directions have the same distance to the target,
-        directions are evaluated using the defined priority order.
-        """
+        """Return the walkable direction closest to the target."""
         if not maze.is_inside(*ghost_position):
             raise ValueError(
                 "Ghost position must be inside the maze."
             )
 
+        opposites = {
+            Direction.UP: Direction.DOWN,
+            Direction.DOWN: Direction.UP,
+            Direction.LEFT: Direction.RIGHT,
+            Direction.RIGHT: Direction.LEFT,
+        }
+        forbidden = opposites.get(current_direction, Direction.NONE)
+
         best_direction = Direction.NONE
         shortest_distance = float("inf")
+        reverse_fallback = Direction.NONE
 
         for direction, (horizontal_change, vertical_change) in (
             ChaseBehavior.POSSIBLE_DIRECTIONS
@@ -41,7 +47,14 @@ class ChaseBehavior:
                 ghost_position[1] + vertical_change,
             )
 
-            if not maze.is_walkable(candidate_position):
+            if not maze.is_walkable(
+                candidate_position,
+                from_position=ghost_position,
+            ):
+                continue
+
+            if forbidden is not Direction.NONE and direction == forbidden:
+                reverse_fallback = direction
                 continue
 
             distance_to_target = (
@@ -53,4 +66,7 @@ class ChaseBehavior:
                 shortest_distance = distance_to_target
                 best_direction = direction
 
-        return best_direction
+        if best_direction is not Direction.NONE:
+            return best_direction
+
+        return reverse_fallback

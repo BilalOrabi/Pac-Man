@@ -197,3 +197,35 @@ def test_return_home_uses_deterministic_tie_breaking() -> None:
 
     assert direction is Direction.RIGHT
 
+
+def test_return_home_bfs_finds_path_around_wall() -> None:
+    """Return-home should use BFS to navigate around obstacles."""
+    # Create 3x3 maze where (0, 0) is blocked directly from (0, 1)
+    # (0, 1) can only reach (0, 0) by going RIGHT to (1, 1) then UP to (1, 0)
+    cells = [
+        [
+            MazeCell((x, y), Wall.NONE, False)
+            for x in range(3)
+        ]
+        for y in range(3)
+    ]
+    # Block direct path between (0, 1) and (0, 0) with walls
+    cells[1][0] = MazeCell((0, 1), Wall.NORTH, False)
+    cells[0][0] = MazeCell((0, 0), Wall.SOUTH, False)
+
+    maze = Maze(
+        width=3,
+        height=3,
+        cells=tuple(tuple(r) for r in cells),
+        entry=(0, 0),
+        exit=(2, 2),
+        shortest_path="",
+    )
+
+    direction = ReturnHomeBehavior.get_direction_toward_home(
+        maze=maze,
+        ghost_position=(0, 1),
+        home_position=(0, 0),
+    )
+
+    assert direction is Direction.RIGHT

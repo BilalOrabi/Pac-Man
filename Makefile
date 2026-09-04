@@ -1,4 +1,4 @@
-.PHONY: help install run debug clean lint test
+.PHONY: help install run debug clean lint test package
 
 help:
 	@echo "Available commands:"
@@ -61,3 +61,7 @@ lint:
 test:
 	@echo "==> Running tests..."
 	uv run pytest
+
+package:
+	@echo "==> Packaging project for distribution..."
+	uv run python package.py

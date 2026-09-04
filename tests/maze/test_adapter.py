@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.maze.adapter import MazeAdapter, MazeGenerationError
+from src.maze.adapter import MazeAdapter
 from src.maze.maze import Wall
 
 

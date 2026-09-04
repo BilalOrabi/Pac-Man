@@ -17,7 +17,6 @@ from src.systems.power_mode import (
 from src.systems.scoring import ScoringSystem
 from src.systems.timer_system import TimerSystem
 from src.world.game_world import GameWorld
-from src.world.level import Level
 from src.world.level_factory import LevelFactory
 from src.config.game_config import GameConfig
 from src.maze.adapter import MazeAdapter
@@ -48,6 +47,7 @@ def create_game_world() -> GameWorld:
     maze_adapter = MazeAdapter()
     level_factory = LevelFactory(
         maze_adapter=maze_adapter,
+        game_configuration=game_configuration,
     )
 
     return GameWorld(
