@@ -1,41 +1,71 @@
 """Tests for the Pac-Man player renderer."""
 
+from unittest.mock import Mock
+
 import pytest
 
 from src.entities.player import Player
-from src.entities.direction import Direction
 from src.rendering.player_renderer import PlayerRenderer
+from src.theme.asset_manager import AssetManager
 
 
-def create_test_player() -> Player:
-    """Create a player for renderer tests."""
-    return Player(
-        position=(1, 1),
-        direction=Direction.RIGHT,
+def create_renderer() -> PlayerRenderer:
+    """Create a player renderer for testing."""
+    asset_manager = Mock(spec=AssetManager)
+    asset_manager.is_initialized = True
+    asset_manager.get_player_sprite.return_value = (
+        "assets/images/player.png"
+    )
+
+    return PlayerRenderer(
+        asset_manager=asset_manager,
     )
 
 
-def test_player_renderer_starts_uninitialized() -> None:
-    """PlayerRenderer should initially be uninitialized."""
-    renderer = PlayerRenderer()
+def test_renderer_starts_uninitialized() -> None:
+    """Player renderer should start uninitialized."""
+    renderer = create_renderer()
 
     assert renderer.is_initialized is False
     assert renderer.player is None
+    assert renderer.player_sprite_asset is None
 
 
-def test_initialize_initializes_renderer() -> None:
-    """Initialize should activate the renderer."""
-    renderer = PlayerRenderer()
+def test_initialize_loads_player_sprite() -> None:
+    """Initialization should configure the player sprite."""
+    renderer = create_renderer()
 
     renderer.initialize()
 
     assert renderer.is_initialized is True
+    assert (
+        renderer.player_sprite_asset
+        == "assets/images/player.png"
+    )
+
+
+def test_initialize_initializes_asset_manager_when_needed() -> None:
+    """Renderer should initialize an uninitialized asset manager."""
+    asset_manager = Mock(spec=AssetManager)
+    asset_manager.is_initialized = False
+    asset_manager.get_player_sprite.return_value = (
+        "assets/images/player.png"
+    )
+
+    renderer = PlayerRenderer(
+        asset_manager=asset_manager,
+    )
+
+    renderer.initialize()
+
+    asset_manager.initialize.assert_called_once()
+    asset_manager.get_player_sprite.assert_called_once()
 
 
 def test_set_player_assigns_player() -> None:
-    """The renderer should store the player to be rendered."""
-    renderer = PlayerRenderer()
-    player = create_test_player()
+    """Renderer should store the player to be rendered."""
+    renderer = create_renderer()
+    player = Mock(spec=Player)
 
     renderer.set_player(player)
 
@@ -44,8 +74,7 @@ def test_set_player_assigns_player() -> None:
 
 def test_render_requires_initialization() -> None:
     """Rendering before initialization should fail."""
-    renderer = PlayerRenderer()
-    renderer.set_player(create_test_player())
+    renderer = create_renderer()
 
     with pytest.raises(RuntimeError):
         renderer.render()
@@ -53,27 +82,43 @@ def test_render_requires_initialization() -> None:
 
 def test_render_requires_player() -> None:
     """Rendering without a player should fail."""
-    renderer = PlayerRenderer()
+    renderer = create_renderer()
+
     renderer.initialize()
 
     with pytest.raises(RuntimeError):
         renderer.render()
 
 
-def test_render_succeeds_when_initialized_with_player() -> None:
-    """Rendering should succeed with a valid initialized renderer."""
-    renderer = PlayerRenderer()
+def test_render_requires_player_sprite() -> None:
+    """Rendering should fail without a player sprite."""
+    renderer = create_renderer()
     renderer.initialize()
-    renderer.set_player(create_test_player())
+
+    renderer.player = Mock(spec=Player)
+    renderer.player_sprite_asset = None
+
+    with pytest.raises(RuntimeError):
+        renderer.render()
+
+
+def test_render_succeeds_with_valid_state() -> None:
+    """Rendering should succeed with valid renderer state."""
+    renderer = create_renderer()
+
+    renderer.initialize()
+    renderer.set_player(Mock(spec=Player))
 
     renderer.render()
 
 
-def test_shutdown_deactivates_renderer() -> None:
-    """Shutdown should deactivate the renderer."""
-    renderer = PlayerRenderer()
+def test_shutdown_resets_renderer() -> None:
+    """Shutdown should clear renderer presentation state."""
+    renderer = create_renderer()
     renderer.initialize()
+    renderer.set_player(Mock(spec=Player))
 
     renderer.shutdown()
 
     assert renderer.is_initialized is False
+    assert renderer.player_sprite_asset is None

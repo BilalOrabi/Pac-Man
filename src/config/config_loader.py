@@ -16,18 +16,7 @@ class ConfigLoader:
 
     @staticmethod
     def load(path: str | Path) -> GameConfig:
-        """Load a configuration file and return a validated GameConfig.
-
-        Args:
-            path: Path to the JSON configuration file.
-
-        Returns:
-            A validated GameConfig instance.
-
-        Raises:
-            ConfigError: If the file cannot be read or contains
-                invalid configuration.
-        """
+        """Load a configuration file and return a validated GameConfig."""
         config_path = Path(path)
 
         data = ConfigLoader._read_json(config_path)
@@ -53,7 +42,9 @@ class ConfigLoader:
             ) from exc
 
         if not isinstance(data, dict):
-            raise ConfigError("Configuration root must be a JSON object.")
+            raise ConfigError(
+                "Configuration root must be a JSON object."
+            )
 
         return data
 
@@ -84,6 +75,26 @@ class ConfigLoader:
                 data,
                 "level_max_time",
             ),
+            player_speed=ConfigLoader._get_positive_float(
+                data,
+                "player_speed",
+            ),
+            ghost_speed=ConfigLoader._get_positive_float(
+                data,
+                "ghost_speed",
+            ),
+            frightened_ghost_speed=ConfigLoader._get_positive_float(
+                data,
+                "frightened_ghost_speed",
+            ),
+            returning_ghost_speed=ConfigLoader._get_positive_float(
+                data,
+                "returning_ghost_speed",
+            ),
+            power_mode_duration=ConfigLoader._get_positive_float(
+                data,
+                "power_mode_duration",
+            ),
             levels=ConfigLoader._get_levels(data),
         )
 
@@ -112,7 +123,10 @@ class ConfigLoader:
         return value
 
     @staticmethod
-    def _get_positive_int(data: dict[str, Any], key: str) -> int:
+    def _get_positive_int(
+        data: dict[str, Any],
+        key: str,
+    ) -> int:
         """Get a required positive integer configuration value."""
         value = ConfigLoader._get_int(data, key)
 
@@ -139,7 +153,34 @@ class ConfigLoader:
         return value
 
     @staticmethod
-    def _get_levels(data: dict[str, Any]) -> tuple[LevelConfig, ...]:
+    def _get_positive_float(
+        data: dict[str, Any],
+        key: str,
+    ) -> float:
+        """Get a required positive floating-point configuration value."""
+        value = data.get(key)
+
+        if isinstance(value, bool) or not isinstance(
+            value,
+            (int, float),
+        ):
+            raise ConfigError(
+                f"Configuration '{key}' must be a number."
+            )
+
+        numeric_value = float(value)
+
+        if numeric_value <= 0:
+            raise ConfigError(
+                f"Configuration '{key}' must be greater than zero."
+            )
+
+        return numeric_value
+
+    @staticmethod
+    def _get_levels(
+        data: dict[str, Any],
+    ) -> tuple[LevelConfig, ...]:
         """Validate and build all configured levels."""
         raw_levels = data.get("levels")
 

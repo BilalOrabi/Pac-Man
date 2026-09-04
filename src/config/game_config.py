@@ -11,10 +11,11 @@ class LevelConfig:
     height: int
 
     def __post_init__(self) -> None:
-
         """Validate level dimensions."""
         if self.width <= 0:
-            raise ValueError("Level width must be greater than zero.")
+            raise ValueError(
+                "Level width must be greater than zero."
+            )
 
         if self.height <= 0:
             raise ValueError(
@@ -34,10 +35,78 @@ class GameConfig:
     points_per_ghost: int
     seed: int
     level_max_time: int
+
+    player_speed: float
+    ghost_speed: float
+    frightened_ghost_speed: float
+    returning_ghost_speed: float
+    power_mode_duration: float
+
     levels: tuple[LevelConfig, ...]
 
     def __post_init__(self) -> None:
+        """Validate game configuration values."""
+        if not self.highscore_filename.strip():
+            raise ValueError(
+                "Highscore filename cannot be empty."
+            )
+
         if self.lives <= 0:
             raise ValueError(
                 "Lives must be greater than zero."
+            )
+
+        if self.pacgum < 0:
+            raise ValueError(
+                "Pacgum count cannot be negative."
+            )
+
+        if self.points_per_pacgum < 0:
+            raise ValueError(
+                "Pacgum points cannot be negative."
+            )
+
+        if self.points_per_super_pacgum < 0:
+            raise ValueError(
+                "Super pacgum points cannot be negative."
+            )
+
+        if self.points_per_ghost < 0:
+            raise ValueError(
+                "Ghost points cannot be negative."
+            )
+
+        if self.level_max_time <= 0:
+            raise ValueError(
+                "Level maximum time must be greater than zero."
+            )
+
+        if self.player_speed <= 0:
+            raise ValueError(
+                "Player speed must be greater than zero."
+            )
+
+        if self.ghost_speed <= 0:
+            raise ValueError(
+                "Ghost speed must be greater than zero."
+            )
+
+        if self.frightened_ghost_speed <= 0:
+            raise ValueError(
+                "Frightened ghost speed must be greater than zero."
+            )
+
+        if self.returning_ghost_speed <= 0:
+            raise ValueError(
+                "Returning ghost speed must be greater than zero."
+            )
+
+        if self.power_mode_duration <= 0:
+            raise ValueError(
+                "Power mode duration must be greater than zero."
+            )
+
+        if not self.levels:
+            raise ValueError(
+                "At least one level must be configured."
             )

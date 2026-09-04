@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from src.entities.direction import Direction
+from src.entities.entity import Entity
 from src.maze.maze import Coordinate
 
 
@@ -25,12 +25,9 @@ class GhostType(Enum):
 
 
 @dataclass
-class Ghost:
+class Ghost(Entity):
     """Represent the state of a single ghost."""
 
     ghost_type: GhostType
-    position: Coordinate
     home_position: Coordinate
-    direction: Direction = Direction.NONE
     state: GhostState = GhostState.CHASE
-    speed: float = 1.0

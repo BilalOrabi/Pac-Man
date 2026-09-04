@@ -158,3 +158,42 @@ def test_process_action_rejects_invalid_action() -> None:
 
     with pytest.raises(TypeError):
         main_loop.process_action("START_GAME")  # type: ignore[arg-type]
+
+
+def test_render_does_nothing_when_loop_is_stopped() -> None:
+    """Rendering should do nothing when the loop is stopped."""
+    coordinator = Mock(spec=GameCoordinator)
+    main_loop = MainGameLoop(
+        game_coordinator=coordinator,
+    )
+
+    main_loop.render()
+
+    coordinator.render.assert_not_called()
+
+
+def test_render_renders_when_loop_is_running() -> None:
+    """Rendering should render through the game coordinator."""
+    coordinator = Mock(spec=GameCoordinator)
+    main_loop = MainGameLoop(
+        game_coordinator=coordinator,
+    )
+
+    main_loop.start()
+    main_loop.render()
+
+    coordinator.render.assert_called_once()
+
+
+def test_run_once_updates_and_renders() -> None:
+    """One running loop iteration should update and render."""
+    coordinator = Mock(spec=GameCoordinator)
+    main_loop = MainGameLoop(
+        game_coordinator=coordinator,
+    )
+
+    main_loop.start()
+    main_loop.run_once(1.0)
+
+    coordinator.update.assert_called_once_with(1.0)
+    coordinator.render.assert_called_once()

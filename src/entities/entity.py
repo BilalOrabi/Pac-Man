@@ -2,11 +2,11 @@
 
 from dataclasses import dataclass
 
-from src.maze import Coordinate
 from src.entities.direction import Direction
+from src.maze import Coordinate
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Entity:
     """Represent the common state shared by movable game entities."""
 

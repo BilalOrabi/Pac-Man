@@ -2,19 +2,31 @@
 
 from dataclasses import dataclass
 
+from src.rendering.renderer import Renderer
+from src.theme.asset_manager import AssetManager
+
 
 @dataclass
-class UIRenderer:
+class UIRenderer(Renderer):
     """Render score, lives, level, and other game information."""
 
+    asset_manager: AssetManager
     is_initialized: bool = False
     score: int = 0
     lives: int = 0
     level_number: int = 1
     message: str = ""
+    menu_font_asset: str | None = None
+    game_font_asset: str | None = None
 
     def initialize(self) -> None:
         """Initialize the user-interface renderer."""
+        if not self.asset_manager.is_initialized:
+            self.asset_manager.initialize()
+
+        self.menu_font_asset = self.asset_manager.get_font("menu")
+        self.game_font_asset = self.asset_manager.get_font("game")
+
         self.is_initialized = True
 
     def set_score(self, score: int) -> None:
@@ -54,6 +66,18 @@ class UIRenderer:
                 "UIRenderer must be initialized before rendering."
             )
 
+        if self.menu_font_asset is None:
+            raise RuntimeError(
+                "Menu font asset must be configured before rendering."
+            )
+
+        if self.game_font_asset is None:
+            raise RuntimeError(
+                "Game font asset must be configured before rendering."
+            )
+
     def shutdown(self) -> None:
         """Shut down the user-interface renderer."""
+        self.menu_font_asset = None
+        self.game_font_asset = None
         self.is_initialized = False

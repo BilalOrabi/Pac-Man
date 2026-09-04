@@ -1,56 +1,72 @@
 """Tests for the Pac-Man maze renderer."""
 
+from unittest.mock import Mock
+
 import pytest
 
-from src.maze.maze import Maze, MazeCell, Wall
+from src.maze.maze import Maze
 from src.rendering.maze_renderer import MazeRenderer
+from src.theme.asset_manager import AssetManager
 
 
-def create_test_maze() -> Maze:
-    """Create a small maze for renderer tests."""
-    cells = tuple(
-        tuple(
-            MazeCell(
-                position=(x, y),
-                walls=Wall.NONE,
-                is_solid_block=False,
-            )
-            for x in range(2)
-        )
-        for y in range(2)
+def create_renderer() -> MazeRenderer:
+    """Create an initialized maze renderer for testing."""
+    asset_manager = Mock(spec=AssetManager)
+    asset_manager.is_initialized = True
+    asset_manager.get_background.return_value = (
+        "assets/images/background.png"
     )
 
-    return Maze(
-        width=2,
-        height=2,
-        cells=cells,
-        entry=(0, 0),
-        exit=(1, 1),
-        shortest_path="",
+    return MazeRenderer(
+        asset_manager=asset_manager,
     )
 
 
-def test_maze_renderer_starts_uninitialized() -> None:
-    """MazeRenderer should initially be uninitialized."""
-    renderer = MazeRenderer()
+def test_renderer_starts_uninitialized() -> None:
+    """Maze renderer should start uninitialized."""
+    renderer = create_renderer()
 
     assert renderer.is_initialized is False
     assert renderer.maze is None
+    assert renderer.background_asset is None
 
 
-def test_initialize_initializes_renderer() -> None:
-    """Initialize should activate the renderer."""
-    renderer = MazeRenderer()
+def test_initialize_loads_background_asset() -> None:
+    """Initialization should configure the background asset."""
+    renderer = create_renderer()
 
     renderer.initialize()
 
     assert renderer.is_initialized is True
+    assert (
+        renderer.background_asset
+        == "assets/images/background.png"
+    )
+
+
+def test_initialize_initializes_asset_manager_when_needed() -> None:
+    """Renderer should initialize an uninitialized asset manager."""
+    asset_manager = Mock(spec=AssetManager)
+    asset_manager.is_initialized = False
+    asset_manager.get_background.return_value = (
+        "assets/images/background.png"
+    )
+
+    renderer = MazeRenderer(
+        asset_manager=asset_manager,
+    )
+
+    renderer.initialize()
+
+    asset_manager.initialize.assert_called_once()
+    asset_manager.get_background.assert_called_once()
+    assert renderer.is_initialized is True
 
 
 def test_set_maze_assigns_maze() -> None:
-    """The renderer should store the maze to be rendered."""
-    renderer = MazeRenderer()
-    maze = create_test_maze()
+    """Renderer should store the maze to be rendered."""
+    renderer = create_renderer()
+    maze = Mock(spec=Maze)
 
     renderer.set_maze(maze)
 
@@ -59,8 +75,7 @@ def test_set_maze_assigns_maze() -> None:
 
 def test_render_requires_initialization() -> None:
     """Rendering before initialization should fail."""
-    renderer = MazeRenderer()
-    renderer.set_maze(create_test_maze())
+    renderer = create_renderer()
 
     with pytest.raises(RuntimeError):
         renderer.render()
@@ -68,27 +83,42 @@ def test_render_requires_initialization() -> None:
 
 def test_render_requires_maze() -> None:
     """Rendering without a maze should fail."""
-    renderer = MazeRenderer()
+    renderer = create_renderer()
+
     renderer.initialize()
 
     with pytest.raises(RuntimeError):
         renderer.render()
 
 
-def test_render_succeeds_when_initialized_with_maze() -> None:
-    """Rendering should succeed with a valid initialized renderer."""
-    renderer = MazeRenderer()
+def test_render_requires_background_asset() -> None:
+    """Rendering should fail when no background asset is configured."""
+    renderer = create_renderer()
     renderer.initialize()
-    renderer.set_maze(create_test_maze())
+
+    renderer.background_asset = None
+    renderer.maze = Mock(spec=Maze)
+
+    with pytest.raises(RuntimeError):
+        renderer.render()
+
+
+def test_render_succeeds_with_initialized_renderer_and_maze() -> None:
+    """Rendering should succeed with valid renderer state."""
+    renderer = create_renderer()
+    renderer.initialize()
+    renderer.set_maze(Mock(spec=Maze))
 
     renderer.render()
 
 
-def test_shutdown_deactivates_renderer() -> None:
-    """Shutdown should deactivate the renderer."""
-    renderer = MazeRenderer()
+def test_shutdown_resets_renderer() -> None:
+    """Shutdown should clear renderer state."""
+    renderer = create_renderer()
     renderer.initialize()
+    renderer.set_maze(Mock(spec=Maze))
 
     renderer.shutdown()
 
     assert renderer.is_initialized is False
+    assert renderer.background_asset is None

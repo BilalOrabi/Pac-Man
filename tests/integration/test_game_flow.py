@@ -6,6 +6,7 @@ from src.application.game_coordinator import GameCoordinator
 from src.config.game_config import GameConfig
 from src.input.input_event import InputAction
 from src.input.input_system import InputSystem
+from src.rendering.game_renderer import GameRenderer
 from src.states.game_state import GameStateType
 from src.states.state_machine import GameStateMachine
 from src.world.game_world import GameWorld
@@ -32,10 +33,14 @@ def create_game_coordinator() -> GameCoordinator:
     input_system = Mock(spec=InputSystem)
     state_machine = GameStateMachine()
 
+    game_renderer = Mock(spec=GameRenderer)
+    game_renderer.is_initialized = False
+
     return GameCoordinator(
         game_world=game_world,
         input_system=input_system,
         state_machine=state_machine,
+        game_renderer=game_renderer,
     )
 
 

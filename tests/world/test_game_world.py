@@ -50,6 +50,11 @@ def create_game_configuration() -> GameConfig:
         points_per_ghost=200,
         seed=42,
         level_max_time=90,
+        player_speed=5.0,
+        ghost_speed=4.0,
+        frightened_ghost_speed=2.0,
+        returning_ghost_speed=6.0,
+        power_mode_duration=7.0,
         levels=(
             LevelConfig(width=19, height=21),
             LevelConfig(width=21, height=23),

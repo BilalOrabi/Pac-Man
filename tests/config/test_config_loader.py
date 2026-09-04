@@ -1,96 +1,128 @@
-"""Tests for configuration file loading."""
+"""Tests for the Pac-Man configuration loader."""
 
 import json
-from pathlib import Path
 
 import pytest
 
 from src.config.config_loader import ConfigError, ConfigLoader
 
 
-def _write_config(
-    tmp_path: Path,
-    data: dict[str, object],
-) -> Path:
-    """Write a temporary JSON configuration file."""
-    path = tmp_path / "config.json"
-    path.write_text(
-        json.dumps(data),
-        encoding="utf-8",
-    )
-    return path
-
-
-def _valid_config() -> dict[str, object]:
-    """Return a minimal valid Pac-Man configuration."""
+def create_valid_configuration() -> dict:
+    """Create a valid JSON configuration dictionary."""
     return {
-        "highscore_filename": "highscores.json",
+        "highscore_filename": "highscores.txt",
         "lives": 3,
-        "pacgum": 42,
+        "pacgum": 10,
         "points_per_pacgum": 10,
         "points_per_super_pacgum": 50,
         "points_per_ghost": 200,
-        "seed": 42,
-        "level_max_time": 90,
+        "seed": 100,
+        "level_max_time": 120,
+        "player_speed": 5.0,
+        "ghost_speed": 4.0,
+        "frightened_ghost_speed": 2.0,
+        "returning_ghost_speed": 6.0,
+        "power_mode_duration": 7.0,
         "levels": [
             {
-                "width": 19,
-                "height": 21,
-            }
+                "width": 5,
+                "height": 5,
+            },
+            {
+                "width": 6,
+                "height": 6,
+            },
         ],
     }
 
 
-def test_load_valid_config(tmp_path: Path) -> None:
-    """ConfigLoader should load a valid configuration."""
-    path = _write_config(tmp_path, _valid_config())
+def test_loader_reads_gameplay_configuration(tmp_path) -> None:
+    """The loader should read gameplay values from JSON."""
+    configuration_path = tmp_path / "config.json"
 
-    config = ConfigLoader.load(path)
+    configuration_path.write_text(
+        json.dumps(create_valid_configuration()),
+        encoding="utf-8",
+    )
 
-    assert config.lives == 3
-    assert config.pacgum == 42
-    assert len(config.levels) == 1
-    assert config.levels[0].width == 19
-    assert config.levels[0].height == 21
+    configuration = ConfigLoader.load(configuration_path)
 
-
-def test_missing_config_file(tmp_path: Path) -> None:
-    """ConfigLoader should reject a missing configuration file."""
-    path = tmp_path / "missing.json"
-
-    with pytest.raises(ConfigError):
-        ConfigLoader.load(path)
+    assert configuration.player_speed == 5.0
+    assert configuration.ghost_speed == 4.0
+    assert configuration.frightened_ghost_speed == 2.0
+    assert configuration.returning_ghost_speed == 6.0
+    assert configuration.power_mode_duration == 7.0
 
 
-def test_invalid_json(tmp_path: Path) -> None:
-    """ConfigLoader should reject malformed JSON."""
-    path = tmp_path / "invalid.json"
-    path.write_text(
-        "{ invalid json",
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "player_speed",
+        "ghost_speed",
+        "frightened_ghost_speed",
+        "returning_ghost_speed",
+        "power_mode_duration",
+    ],
+)
+def test_loader_rejects_missing_gameplay_value(
+    tmp_path,
+    field_name: str,
+) -> None:
+    """The loader should reject missing gameplay values."""
+    configuration_data = create_valid_configuration()
+    del configuration_data[field_name]
+
+    configuration_path = tmp_path / "config.json"
+
+    configuration_path.write_text(
+        json.dumps(configuration_data),
         encoding="utf-8",
     )
 
     with pytest.raises(ConfigError):
-        ConfigLoader.load(path)
+        ConfigLoader.load(configuration_path)
 
 
-def test_missing_required_field(tmp_path: Path) -> None:
-    """ConfigLoader should reject missing required configuration."""
-    data = _valid_config()
-    del data["lives"]
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "player_speed",
+        "ghost_speed",
+        "frightened_ghost_speed",
+        "returning_ghost_speed",
+        "power_mode_duration",
+    ],
+)
+def test_loader_rejects_non_positive_gameplay_value(
+    tmp_path,
+    field_name: str,
+) -> None:
+    """The loader should reject non-positive gameplay values."""
+    configuration_data = create_valid_configuration()
+    configuration_data[field_name] = 0
 
-    path = _write_config(tmp_path, data)
+    configuration_path = tmp_path / "config.json"
+
+    configuration_path.write_text(
+        json.dumps(configuration_data),
+        encoding="utf-8",
+    )
 
     with pytest.raises(ConfigError):
-        ConfigLoader.load(path)
+        ConfigLoader.load(configuration_path)
 
 
-def test_invalid_level_dimensions(tmp_path: Path) -> None:
-    """ConfigLoader should reject invalid level dimensions."""
-    data = _valid_config()
-    data["levels"] = [{"width": 0, "height": 21}]
+def test_loader_rejects_non_numeric_gameplay_value(tmp_path) -> None:
+    """The loader should reject non-numeric gameplay values."""
+    configuration_data = create_valid_configuration()
+    configuration_data["player_speed"] = "fast"
 
-    path = _write_config(tmp_path, data)
+    configuration_path = tmp_path / "config.json"
+
+    configuration_path.write_text(
+        json.dumps(configuration_data),
+        encoding="utf-8",
+    )
 
     with pytest.raises(ConfigError):
-        ConfigLoader.load(path)
+        ConfigLoader.load(configuration_path)

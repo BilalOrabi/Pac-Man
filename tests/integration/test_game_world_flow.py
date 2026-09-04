@@ -14,6 +14,9 @@ from src.states.state_machine import GameStateMachine
 
 from src.world.game_world import GameWorld
 from src.world.level_factory import LevelFactory
+from unittest.mock import Mock
+
+from src.rendering.game_renderer import GameRenderer
 
 
 def create_game_coordinator() -> GameCoordinator:
@@ -27,6 +30,11 @@ def create_game_coordinator() -> GameCoordinator:
         points_per_ghost=200,
         seed=100,
         level_max_time=120,
+        player_speed=5.0,
+        ghost_speed=4.0,
+        frightened_ghost_speed=2.0,
+        returning_ghost_speed=6.0,
+        power_mode_duration=7.0,
         levels=(
             LevelConfig(width=5, height=5),
             LevelConfig(width=6, height=6),
@@ -43,10 +51,14 @@ def create_game_coordinator() -> GameCoordinator:
         level_factory=level_factory,
     )
 
+    game_renderer = Mock(spec=GameRenderer)
+    game_renderer.is_initialized = False
+
     return GameCoordinator(
         game_world=game_world,
         input_system=InputSystem(),
         state_machine=GameStateMachine(),
+        game_renderer=game_renderer,
     )
 
 

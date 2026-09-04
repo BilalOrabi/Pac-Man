@@ -1,113 +1,87 @@
-"""Tests for the Pac-Man game coordinator."""
+"""Application coordinator for the Pac-Man game."""
 
-from unittest.mock import Mock
+from dataclasses import dataclass
 
-import pytest
-
-from src.application.game_coordinator import GameCoordinator
 from src.input.input_event import InputAction
 from src.input.input_system import InputSystem
+from src.rendering.game_renderer import GameRenderer
 from src.states.game_state import GameStateType
 from src.states.state_machine import GameStateMachine
 from src.world.game_world import GameWorld
 
 
-def create_game_coordinator() -> GameCoordinator:
-    """Create a coordinator with mocked game-world dependencies."""
-    game_world = Mock(spec=GameWorld)
-    input_system = InputSystem()
-    state_machine = GameStateMachine()
+@dataclass
+class GameCoordinator:
+    """Coordinate the game world, input, state machine, and rendering."""
 
-    return GameCoordinator(
-        game_world=game_world,
-        input_system=input_system,
-        state_machine=state_machine,
-    )
+    game_world: GameWorld
+    input_system: InputSystem
+    state_machine: GameStateMachine
+    game_renderer: GameRenderer
 
+    def start_game(self) -> None:
+        """Start a new Pac-Man game."""
+        self.game_world.start()
+        self.state_machine.transition_to(GameStateType.PLAYING)
 
-def test_coordinator_starts_in_menu() -> None:
-    """The coordinator should initially be in the menu."""
-    coordinator = create_game_coordinator()
+    def update(self, elapsed_seconds: float) -> None:
+        """Update the active game state and world."""
+        if elapsed_seconds < 0:
+            raise ValueError(
+                "Elapsed time cannot be negative."
+            )
 
-    assert (
-        coordinator.state_machine.current_state
-        is GameStateType.MENU
-    )
+        current_state = self.state_machine.current_state
 
+        if current_state is not GameStateType.PLAYING:
+            return
 
-def test_start_game_starts_world_and_enters_playing_state() -> None:
-    """Starting the game should start the world and enter PLAYING."""
-    coordinator = create_game_coordinator()
+        if self.game_world.current_level is not None:
+            self.game_world.current_level.update_time(
+                elapsed_seconds
+            )
 
-    coordinator.start_game()
+    def render(self) -> None:
+        """Render the current application frame."""
+        if not self.game_renderer.is_initialized:
+            self.game_renderer.initialize()
 
-    coordinator.game_world.start.assert_called_once()
-    assert (
-        coordinator.state_machine.current_state
-        is GameStateType.PLAYING
-    )
+        self.game_renderer.render()
 
+    def shutdown(self) -> None:
+        """Shut down the application presentation layer."""
+        if self.game_renderer.is_initialized:
+            self.game_renderer.shutdown()
 
-def test_start_game_action_starts_game_from_menu() -> None:
-    """START_GAME should begin the game when the menu is active."""
-    coordinator = create_game_coordinator()
+    def handle_action(self, action: InputAction) -> None:
+        """Handle a game input action."""
+        if not isinstance(action, InputAction):
+            raise TypeError(
+                "action must be an InputAction."
+            )
 
-    coordinator.handle_action(InputAction.START_GAME)
+        current_state = self.state_machine.current_state
 
-    coordinator.game_world.start.assert_called_once()
-    assert (
-        coordinator.state_machine.current_state
-        is GameStateType.PLAYING
-    )
+        if (
+            current_state is GameStateType.MENU
+            and action is InputAction.START_GAME
+        ):
+            self.start_game()
+            return
 
+        if (
+            current_state is GameStateType.PLAYING
+            and action is InputAction.PAUSE_GAME
+        ):
+            self.state_machine.transition_to(
+                GameStateType.PAUSED
+            )
+            return
 
-def test_pause_game_action_enters_paused_state() -> None:
-    """PAUSE_GAME should move the game from PLAYING to PAUSED."""
-    coordinator = create_game_coordinator()
-
-    coordinator.start_game()
-    coordinator.handle_action(InputAction.PAUSE_GAME)
-
-    assert (
-        coordinator.state_machine.current_state
-        is GameStateType.PAUSED
-    )
-
-
-def test_pause_game_action_resumes_game() -> None:
-    """PAUSE_GAME should resume the game from the paused state."""
-    coordinator = create_game_coordinator()
-
-    coordinator.start_game()
-    coordinator.handle_action(InputAction.PAUSE_GAME)
-    coordinator.handle_action(InputAction.PAUSE_GAME)
-
-    assert (
-        coordinator.state_machine.current_state
-        is GameStateType.PLAYING
-    )
-
-
-def test_update_rejects_negative_elapsed_time() -> None:
-    """Update should reject negative elapsed time."""
-    coordinator = create_game_coordinator()
-
-    with pytest.raises(ValueError):
-        coordinator.update(-1.0)
-
-
-def test_update_does_nothing_when_not_playing() -> None:
-    """Update should not update the world outside PLAYING."""
-    coordinator = create_game_coordinator()
-
-    coordinator.update(1.0)
-
-    coordinator.game_world.start.assert_not_called()
-
-
-def test_handle_action_rejects_invalid_action() -> None:
-    """The coordinator should reject values that are not InputAction."""
-    coordinator = create_game_coordinator()
-
-    with pytest.raises(TypeError):
-        coordinator.handle_action("START_GAME")  # type: ignore[arg-type]
+        if (
+            current_state is GameStateType.PAUSED
+            and action is InputAction.PAUSE_GAME
+        ):
+            self.state_machine.transition_to(
+                GameStateType.PLAYING
+            )

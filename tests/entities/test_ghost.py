@@ -16,7 +16,7 @@ def test_ghost_has_expected_default_state() -> None:
 
     assert ghost.state == GhostState.CHASE
     assert ghost.direction == Direction.NONE
-    assert ghost.speed == 1.0
+    assert ghost.speed == 0.0
 
 
 def test_ghost_stores_identity() -> None:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from src.input.input_event import InputAction
 from src.input.input_system import InputSystem
+from src.rendering.game_renderer import GameRenderer
 from src.states.game_state import GameStateType
 from src.states.state_machine import GameStateMachine
 from src.world.game_world import GameWorld
@@ -11,15 +12,20 @@ from src.world.game_world import GameWorld
 
 @dataclass
 class GameCoordinator:
-    """Coordinate the game world, input system, and state machine."""
+    """Coordinate the game world, input, state machine, and rendering."""
 
     game_world: GameWorld
     input_system: InputSystem
     state_machine: GameStateMachine
+    game_renderer: GameRenderer
 
     def start_game(self) -> None:
         """Start a new Pac-Man game."""
         self.game_world.start()
+
+        if not self.game_renderer.is_initialized:
+            self.game_renderer.initialize()
+
         self.state_machine.transition_to(GameStateType.PLAYING)
 
     def update(self, elapsed_seconds: float) -> None:
@@ -38,6 +44,18 @@ class GameCoordinator:
             self.game_world.current_level.update_time(
                 elapsed_seconds
             )
+
+    def render(self) -> None:
+        """Render the current application frame."""
+        if not self.game_renderer.is_initialized:
+            self.game_renderer.initialize()
+
+        self.game_renderer.render()
+
+    def shutdown(self) -> None:
+        """Shut down the application presentation layer."""
+        if self.game_renderer.is_initialized:
+            self.game_renderer.shutdown()
 
     def handle_action(self, action: InputAction) -> None:
         """Handle a game input action."""

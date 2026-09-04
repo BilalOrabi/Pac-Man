@@ -62,6 +62,11 @@ def create_game_world(number_of_levels: int = 2) -> GameWorld:
         points_per_ghost=200,
         seed=42,
         level_max_time=90,
+        player_speed=5.0,
+        ghost_speed=4.0,
+        frightened_ghost_speed=2.0,
+        returning_ghost_speed=6.0,
+        power_mode_duration=7.0,
         levels=levels,
     )
 

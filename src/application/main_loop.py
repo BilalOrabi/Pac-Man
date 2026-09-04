@@ -49,6 +49,13 @@ class MainGameLoop:
 
         self.game_coordinator.update(elapsed_seconds)
 
+    def render(self) -> None:
+        """Render the current game frame while the loop is running."""
+        if not self.is_running:
+            return
+
+        self.game_coordinator.render()
+
     def run_once(
         self,
         elapsed_seconds: float,
@@ -61,5 +68,8 @@ class MainGameLoop:
         if action is not None:
             self.process_action(action)
 
-        if self.is_running:
-            self.update(elapsed_seconds)
+        if not self.is_running:
+            return
+
+        self.update(elapsed_seconds)
+        self.render()
