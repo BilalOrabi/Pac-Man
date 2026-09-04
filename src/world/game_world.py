@@ -15,6 +15,7 @@ class GameWorld:
     level_factory: LevelFactory
     current_level_index: int = 0
     current_level: Level | None = None
+    start_called: bool = False
 
     def start(self) -> Level:
         """Create and start the first level."""
@@ -22,6 +23,7 @@ class GameWorld:
         self.current_level = self._create_level(
             self.current_level_index
         )
+        self.start_called = True
 
         return self.current_level
 
@@ -55,7 +57,9 @@ class GameWorld:
 
     def _create_level(self, level_index: int) -> Level:
         """Create a level from the configured level index."""
-        level_configuration = self.game_configuration.levels[level_index]
+        level_configuration = self.game_configuration.levels[
+            level_index
+        ]
 
         return self.level_factory.create_level(
             level_number=level_index + 1,

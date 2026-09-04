@@ -11,3 +11,4 @@ class GameStateType(Enum):
     PAUSED = "paused"
     GAME_OVER = "game_over"
     VICTORY = "victory"
+    ENTER_NAME = "enter_name"
