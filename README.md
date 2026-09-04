@@ -94,7 +94,7 @@ python pac-man.py config.json
   - `pytest`, `flake8`, `mypy` (verification and testing).
 - **AI Collaboration**:
   - AI assisted in auditing architectural boundaries, verifying bitmask boundary wall collision logic, refactoring procedural rendering fallbacks, and maintaining complete static type annotations.
-  - All generated code was verified with 480 automated tests, strict `flake8` compliance (0 warnings), and zero-defect `mypy` type checking.
+  - All generated code was verified with 503 automated tests, strict `flake8` compliance (0 warnings), and zero-defect `mypy` type checking.
 
 ---
 
@@ -180,7 +180,7 @@ stateDiagram-v2
 - **Blinky (Red)**: Direct aggressive pursuit targeting Pac-Man's exact grid cell.
 - **Pinky (Pink)**: Ambush behavior targeting cells ahead of Pac-Man's current direction.
 - **Inky (Blue)**: Flanking behavior using a vector from Blinky through Pac-Man.
-- **Clyde (Orange)**: Distance-sensitive behavior: chases Pac-Man when far, retreats to home corner when within 4 cells.
+- **Clyde (Orange)**: Distance-sensitive behavior: chases Pac-Man when farther than 8 cells, retreats to home corner when within 8 cells.
 
 ### Power Mode
 - Consuming a super-pacgum awards +50 points and triggers Power Mode for `power_mode_duration` seconds.
@@ -195,30 +195,32 @@ The codebase follows a modular clean architecture where presentation is strictly
 
 ```mermaid
 flowchart TD
-    subgraph Presentation Layer [Presentation & Input Layer (Pygame)]
-        LOOP[MainGameLoop / 60 FPS Clock]
-        R_GAME[GameRenderer]
-        R_MAZE[MazeRenderer]
-        R_PLAYER[PlayerRenderer]
-        R_GHOST[GhostRenderer]
-        R_UI[UIRenderer - HUD & Menus]
-        AM[AssetManager & Theme Config]
+    subgraph PresentationLayer ["Presentation & Input Layer (Pygame)"]
+        PYGAME["pac-man.py (60 FPS Clock & Event Loop)"]
+        R_GAME["GameRenderer"]
+        R_MAZE["MazeRenderer"]
+        R_PLAYER["PlayerRenderer"]
+        R_GHOST["GhostRenderer"]
+        R_UI["UIRenderer (HUD & Menus)"]
+        AM["AssetManager & Theme Config"]
     end
 
-    subgraph Application Layer [Application Coordination]
-        GC[GameCoordinator]
-        SM[GameStateMachine]
+    subgraph ApplicationLayer ["Application Coordination"]
+        LOOP["MainGameLoop"]
+        GC["GameCoordinator"]
+        SM["GameStateMachine"]
     end
 
-    subgraph Domain Tier [Core Game Domain (Pure Python)]
-        WORLD[GameWorld & Level]
-        CONTROLLER[GameplayController]
-        COLLISION[CollisionSystem - Wall Bitmasks]
-        AI[GhostAI & Controllers]
-        CHEAT[CheatSystem]
-        SCORES[ScoringSystem & LivesSystem]
+    subgraph DomainTier ["Core Game Domain (Pure Python)"]
+        WORLD["GameWorld & Level"]
+        CONTROLLER["GameplayController"]
+        COLLISION["CollisionSystem (Wall Bitmasks)"]
+        AI["GhostAI, GhostTargeting & Controllers"]
+        CHEAT["CheatSystem"]
+        SCORES["ScoringSystem & LivesSystem"]
     end
 
+    PYGAME --> LOOP
     LOOP --> GC
     GC --> SM
     GC --> WORLD
@@ -257,7 +259,7 @@ Comprehensive project management documentation and artifacts are located in [`do
 The codebase strictly adheres to 42 School software standards:
 
 ```bash
-# Run the complete test suite (480 passed)
+# Run the complete test suite (503 passed)
 uv run pytest
 
 # Check style compliance (0 warnings)
