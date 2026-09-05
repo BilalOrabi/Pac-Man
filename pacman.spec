@@ -12,30 +12,11 @@ Output:
     dist/pacman/
 """
 
-import os
-
-
 # ==============================================================================
-# STAGE 1: NON-CODE ASSETS & DATA FILES
+# STAGE 1: NON-CODE ASSETS & DATA FILES (Delegated to package.py)
 # ==============================================================================
-
-bundle_data_files = []
-
-if os.path.exists("assets"):
-    bundle_data_files.append(
-        ("assets", "assets")
-    )
-
-if os.path.exists("config.json"):
-    bundle_data_files.append(
-        ("config.json", ".")
-    )
-
-if os.path.exists("INSTRUCTIONS.txt"):
-    bundle_data_files.append(
-        ("INSTRUCTIONS.txt", ".")
-    )
-
+# Non-code presentation assets (assets/), configuration (config.json), and
+# documentation (INSTRUCTIONS.txt) are copied into dist/pacman/ by package.py.
 
 # ==============================================================================
 # STAGE 2: SOURCE CODE & DEPENDENCY ANALYSIS
@@ -45,7 +26,7 @@ analysis = Analysis(
     scripts=["pac-man.py"],
     pathex=["."],
     binaries=[],
-    datas=bundle_data_files,
+    datas=[],
     hiddenimports=[
         "pygame",
         "mazegenerator",
