@@ -1,133 +1,127 @@
-"""Packaging script for 42 School Pac-Man platform distribution.
-
-This script automates building standalone distribution packages suitable
-for distribution on game platforms (such as itch.io and Steam).
-"""
+"""Build and package the standalone Linux Pac-Man distribution."""
 
 import shutil
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
 
 
-def _prepare_release_directory(release_dir: Path) -> None:
-    """Wipe any existing build and initialize a fresh release directory."""
-    if release_dir.exists():
-        shutil.rmtree(release_dir)
-    release_dir.mkdir(parents=True, exist_ok=True)
+def _get_project_root() -> Path:
+    """Return the project root directory."""
+    return Path(__file__).resolve().parent
 
 
-def _copy_source_files(project_root: Path, release_dir: Path) -> None:
-    """Copy pure domain and presentation Python packages and entry points."""
-    src_dest = release_dir / "src"
-    shutil.copytree(project_root / "src", src_dest)
-
-    # Clean intermediate Python bytecode (__pycache__) from release bundle
-    for pycache_dir in release_dir.rglob("__pycache__"):
-        shutil.rmtree(pycache_dir)
-
-    # Copy entry point and core configuration
-    shutil.copy2(project_root / "pac-man.py", release_dir / "pac-man.py")
-    shutil.copy2(project_root / "config.json", release_dir / "config.json")
-
-    # Copy player manual if present
-    instructions_file = project_root / "INSTRUCTIONS.txt"
-    if instructions_file.exists():
-        shutil.copy2(instructions_file, release_dir / "INSTRUCTIONS.txt")
+def _get_release_directory(project_root: Path) -> Path:
+    """Return the PyInstaller distribution directory."""
+    return project_root / "dist" / "pacman"
 
 
-def _copy_dependencies_and_assets(
-    project_root: Path, release_dir: Path
-) -> None:
-    """Copy external wheels (mazegenerator) and presentation assets."""
-    libs_dir = project_root / "libs"
-    if libs_dir.exists():
-        shutil.copytree(libs_dir, release_dir / "libs")
+def _clean_build_directories(project_root: Path) -> None:
+    """Remove previous PyInstaller build artifacts."""
+    for directory_name in ("build", "dist"):
+        directory = project_root / directory_name
 
-    assets_dir = project_root / "assets"
-    if assets_dir.exists():
-        shutil.copytree(assets_dir, release_dir / "assets")
-    else:
-        (release_dir / "assets").mkdir(exist_ok=True)
+        if directory.exists():
+            shutil.rmtree(directory)
 
 
-def _generate_platform_launchers(release_dir: Path) -> None:
-    """Generate double-click OS execution scripts for Windows and Unix."""
-    # Windows Command Batch Launcher
-    run_bat = release_dir / "run.bat"
-    run_bat.write_text(
-        "@echo off\n"
-        "echo Launching 42 School Pac-Man...\n"
-        "python pac-man.py config.json\n"
-        "if %errorlevel% neq 0 pause\n",
-        encoding="utf-8",
+def _build_executable(project_root: Path) -> None:
+    """Build the standalone Linux executable with PyInstaller."""
+    print("==> Building standalone Linux executable...")
+
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "pyinstaller",
+            "pacman.spec",
+            "--clean",
+            "--noconfirm",
+        ],
+        cwd=project_root,
+        check=False,
     )
 
-    # Linux and macOS Bash Shell Launcher
-    run_sh = release_dir / "run.sh"
-    run_sh.write_text(
-        "#!/usr/bin/env bash\n"
-        "echo 'Launching 42 School Pac-Man...'\n"
-        "python3 pac-man.py config.json\n",
-        encoding="utf-8",
+    if result.returncode != 0:
+        raise RuntimeError(
+            "PyInstaller failed to build the Pac-Man executable."
+        )
+
+
+def _verify_executable(release_directory: Path) -> Path:
+    """Verify that the standalone executable was created."""
+    executable_path = release_directory / "pacman"
+
+    if not executable_path.is_file():
+        raise FileNotFoundError(
+            f"Standalone executable was not created: {executable_path}"
+        )
+
+    return executable_path
+
+
+def _create_release_archive(
+    project_root: Path,
+    release_directory: Path,
+) -> Path:
+    """Create a ZIP archive containing the complete Linux distribution."""
+    archive_path = project_root / "dist" / "pacman_linux.zip"
+
+    if archive_path.exists():
+        archive_path.unlink()
+
+    print("==> Creating Linux release archive...")
+
+    with zipfile.ZipFile(
+        archive_path,
+        "w",
+        zipfile.ZIP_DEFLATED,
+    ) as archive:
+        for file_path in release_directory.rglob("*"):
+            if file_path.is_file():
+                archive.write(
+                    file_path,
+                    file_path.relative_to(
+                        release_directory.parent
+                    ),
+                )
+
+    return archive_path
+
+
+def create_release_package() -> Path:
+    """Build the standalone Linux game and create its ZIP archive."""
+    project_root = _get_project_root()
+    release_directory = _get_release_directory(project_root)
+
+    print("==> Cleaning previous build files...")
+    _clean_build_directories(project_root)
+
+    _build_executable(project_root)
+
+    executable_path = _verify_executable(
+        release_directory
     )
 
+    archive_path = _create_release_archive(
+        project_root,
+        release_directory,
+    )
 
-def _create_release_archive(dist_dir: Path, release_dir: Path) -> Path:
-    """Compress the release directory into a distributable ZIP archive."""
-    zip_path = dist_dir / "pacman_release.zip"
-    if zip_path.exists():
-        zip_path.unlink()
+    print("==> Packaging complete!")
+    print(f"    Executable : {executable_path}")
+    print(f"    ZIP        : {archive_path}")
 
-    print("==> Compressing release directory into pacman_release.zip...")
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-        for file_path in release_dir.rglob("*"):
-            archive.write(file_path, file_path.relative_to(dist_dir))
-
-    return zip_path
-
-
-def create_release_bundle() -> Path:
-    """Bundle the Pac-Man project into a distributable release directory.
-
-    Execution Pipeline:
-      Step 1: Clean and create target release folder (dist/pacman_release/).
-      Step 2: Copy game source code, config, and documentation.
-      Step 3: Copy external wheel libraries and presentation assets.
-      Step 4: Generate OS launchers (run.bat for Windows, run.sh for Unix).
-      Step 5: Compress bundle into pacman_release.zip for itch.io / Steam.
-
-    Returns:
-        Path to the generated release directory.
-    """
-    project_root = Path(__file__).resolve().parent
-    dist_dir = project_root / "dist"
-    release_dir = dist_dir / "pacman_release"
-
-    print("==> Step 1: Initializing fresh release directory...")
-    _prepare_release_directory(release_dir)
-
-    print("==> Step 2: Copying source packages, entry point and configs...")
-    _copy_source_files(project_root, release_dir)
-
-    print("==> Step 3: Bundling wheel dependencies and presentation assets...")
-    _copy_dependencies_and_assets(project_root, release_dir)
-
-    print("==> Step 4: Generating Windows (.bat) and Unix (.sh) launchers...")
-    _generate_platform_launchers(release_dir)
-
-    print("==> Step 5: Building compressed distribution archive...")
-    zip_path = _create_release_archive(dist_dir, release_dir)
-
-    print("==> Packaging Complete!")
-    print(f"    Release Folder  : {release_dir}")
-    print(f"    Release Archive : {zip_path}")
-    return release_dir
+    return archive_path
 
 
 if __name__ == "__main__":
     try:
-        create_release_bundle()
+        create_release_package()
     except Exception as exc:
-        print(f"Packaging failed: {exc}", file=sys.stderr)
+        print(
+            f"Packaging failed: {exc}",
+            file=sys.stderr,
+        )
         sys.exit(1)

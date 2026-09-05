@@ -2,7 +2,7 @@
 
 import os
 import sys
-
+from pathlib import Path
 import pygame
 
 from src.ai.ghost_ai import GhostAI
@@ -450,22 +450,40 @@ def run_game(config: GameConfig) -> None:
 def main() -> None:
     """Start the Pac-Man application."""
     ErrorLogger.install("errors.log")
+
     args: list[str] = sys.argv[1:]
 
-    if len(args) != 1:
+    if len(args) > 1:
         print("Error: Invalid arguments.", file=sys.stderr)
-        print("Usage: python3 pac-man.py <config.json>", file=sys.stderr)
+        print(
+            "Usage: python3 pac-man.py [config.json]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
-    config_path = args[0]
+    if args:
+        config_path = args[0]
+    else:
+        config_path = str(
+            Path(__file__).resolve().parent / "config.json"
+        )
 
     try:
-        config = ConfigLoader.load(config_path, fallback_to_defaults=True)
+        config = ConfigLoader.load(
+            config_path,
+            fallback_to_defaults=True,
+        )
     except ConfigError as exc:
-        print(f"Configuration error: {exc}", file=sys.stderr)
+        print(
+            f"Configuration error: {exc}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     except Exception as exc:
-        print(f"Error loading configuration: {exc}", file=sys.stderr)
+        print(
+            f"Error loading configuration: {exc}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     run_game(config)

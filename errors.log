@@ -208,3 +208,12 @@
 [2026-09-05 19:50:20] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
 [2026-09-05 19:50:20] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
 [2026-09-05 19:50:20] Warning: No valid levels found. Using standard 10 default levels.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'highscore_filename'. Using default: 'highscores.json'.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'lives' (-5). Clamping to default: 3.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'pacgum' (None). Clamping to default: 42.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'points_per_pacgum' (None). Clamping to default: 10.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'points_per_super_pacgum' (None). Clamping to default: 50.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'points_per_ghost' (None). Clamping to default: 200.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
+[2026-09-05 21:12:18] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
+[2026-09-05 21:12:18] Warning: No valid levels found. Using standard 10 default levels.
