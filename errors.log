@@ -196,3 +196,15 @@
 [2026-09-05 17:37:17] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
 [2026-09-05 17:37:17] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
 [2026-09-05 17:37:17] Warning: No valid levels found. Using standard 10 default levels.
+[2026-09-05 18:36:12] Configuration error: Configuration file not found: config.json
+[2026-09-05 19:49:30] Error: Invalid arguments.
+[2026-09-05 19:49:30] Usage: python3 pac-man.py <config.json>
+[2026-09-05 19:50:20] Warning: Invalid or missing 'highscore_filename'. Using default: 'highscores.json'.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'lives' (-5). Clamping to default: 3.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'pacgum' (None). Clamping to default: 42.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'points_per_pacgum' (None). Clamping to default: 10.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'points_per_super_pacgum' (None). Clamping to default: 50.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'points_per_ghost' (None). Clamping to default: 200.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
+[2026-09-05 19:50:20] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
+[2026-09-05 19:50:20] Warning: No valid levels found. Using standard 10 default levels.

@@ -2,7 +2,7 @@
   # Lines starting with "#" or "//" are comments and will be ignored by ConfigLoader
   "highscore_filename": "highscores.json",
   "lives": 3,
-  "pacgum": 200,
+  "pacgum": 500,
   "points_per_pacgum": 10,
   "points_per_super_pacgum": 50,
   "points_per_ghost": 200,
