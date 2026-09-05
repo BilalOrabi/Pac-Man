@@ -464,9 +464,8 @@ def main() -> None:
     if args:
         config_path = args[0]
     else:
-        config_path = str(
-            Path(__file__).resolve().parent / "config.json"
-        )
+        application_directory = Path(__file__).resolve().parent.parent
+        config_path = str(application_directory / "config.json")
 
     try:
         config = ConfigLoader.load(
