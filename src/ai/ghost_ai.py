@@ -25,27 +25,29 @@ class GhostAI:
         """Set the ghost's current movement direction."""
         self.current_direction = direction
 
-    def get_next_direction(
+    def _resolve_effective_direction(
+        self, current_direction: Direction
+    ) -> Direction:
+        """Resolve current direction with fallback to instance direction."""
+        if current_direction is not Direction.NONE:
+            return current_direction
+        return self.current_direction
+
+    def _dispatch_mode_direction(
         self,
         maze: Maze,
         ghost_position: Coordinate,
         target_position: Coordinate,
         home_position: Coordinate,
-        current_direction: Direction = Direction.NONE,
+        effective_direction: Direction,
     ) -> Direction:
-        """Calculate the next direction according to the current mode."""
-        cur_dir = (
-            current_direction
-            if current_direction is not Direction.NONE
-            else self.current_direction
-        )
-
+        """Route movement query to the corresponding mode strategy."""
         if self.current_mode is GhostMode.CHASE:
             return ChaseBehavior.get_direction_toward_target(
                 maze=maze,
                 ghost_position=ghost_position,
                 target_position=target_position,
-                current_direction=cur_dir,
+                current_direction=effective_direction,
             )
 
         if self.current_mode is GhostMode.FLEE:
@@ -53,7 +55,7 @@ class GhostAI:
                 maze=maze,
                 ghost_position=ghost_position,
                 target_position=target_position,
-                current_direction=cur_dir,
+                current_direction=effective_direction,
             )
 
         if self.current_mode is GhostMode.RETURN_HOME:
@@ -64,6 +66,26 @@ class GhostAI:
             )
 
         return Direction.NONE
+
+    def get_next_direction(
+        self,
+        maze: Maze,
+        ghost_position: Coordinate,
+        target_position: Coordinate,
+        home_position: Coordinate,
+        current_direction: Direction = Direction.NONE,
+    ) -> Direction:
+        """Calculate the next direction according to the current mode."""
+        effective_direction = self._resolve_effective_direction(
+            current_direction
+        )
+        return self._dispatch_mode_direction(
+            maze=maze,
+            ghost_position=ghost_position,
+            target_position=target_position,
+            home_position=home_position,
+            effective_direction=effective_direction,
+        )
 
     def get_current_mode(self) -> GhostMode:
         """Return the ghost's current behavioral mode."""

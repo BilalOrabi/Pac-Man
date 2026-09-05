@@ -10,17 +10,16 @@ class LevelConfig:
     width: int
     height: int
 
+    @staticmethod
+    def _validate_dimension(value: int, axis: str) -> None:
+        """Validate that a level dimension is strictly positive."""
+        if value <= 0:
+            raise ValueError(f"Level {axis} must be greater than zero.")
+
     def __post_init__(self) -> None:
         """Validate level dimensions."""
-        if self.width <= 0:
-            raise ValueError(
-                "Level width must be greater than zero."
-            )
-
-        if self.height <= 0:
-            raise ValueError(
-                "Level height must be greater than zero."
-            )
+        self._validate_dimension(self.width, "width")
+        self._validate_dimension(self.height, "height")
 
 
 @dataclass(frozen=True)

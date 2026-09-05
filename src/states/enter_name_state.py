@@ -14,15 +14,19 @@ class EnterNameState:
     player_name: str = ""
     maximum_name_length: int = 10
 
-    def add_character(self, character: str) -> None:
-        """Add one character to the player's name."""
+    @staticmethod
+    def _validate_character(character: object) -> None:
+        """Validate that input is a single string character."""
         if not isinstance(character, str):
             raise TypeError("character must be a string.")
-
         if len(character) != 1:
             raise ValueError(
                 "character must contain exactly one character."
             )
+
+    def add_character(self, character: str) -> None:
+        """Add one character to the player's name."""
+        self._validate_character(character)
 
         if len(self.player_name) >= self.maximum_name_length:
             return

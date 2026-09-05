@@ -50,21 +50,31 @@ class Entity:
         dx, dy = offsets.get(direction, (0.0, 0.0))
         return (x + dx * progress, y + dy * progress)
 
+    @staticmethod
+    def _clamp_progress(progress: float) -> float:
+        """Clamp movement interpolation progress between 0.0 and 1.0."""
+        return max(0.0, min(1.0, progress))
+
+    def _compute_visual_coords(self, progress: float) -> tuple[float, float]:
+        """Calculate visual coordinates given clamped progress."""
+        if self.target_position is not None:
+            return self._interpolate_target(
+                self.position, self.target_position, progress
+            )
+
+        if self.direction is Direction.NONE:
+            x, y = self.position
+            return (float(x), float(y))
+
+        return self._interpolate_direction(
+            self.position, self.direction, progress
+        )
+
     def get_visual_position(self) -> tuple[float, float]:
         """Return the sub-tile interpolated floating position."""
         x, y = self.position
         if self.movement_progress <= 0.0:
             return (float(x), float(y))
 
-        t = max(0.0, min(1.0, self.movement_progress))
-        if self.target_position is not None:
-            return self._interpolate_target(
-                self.position, self.target_position, t
-            )
-
-        if self.direction is Direction.NONE:
-            return (float(x), float(y))
-
-        return self._interpolate_direction(
-            self.position, self.direction, t
-        )
+        progress = self._clamp_progress(self.movement_progress)
+        return self._compute_visual_coords(progress)

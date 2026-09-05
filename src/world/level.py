@@ -47,20 +47,23 @@ class Level:
         if self.remaining_pacgums == 0:
             self.completed = True
 
+    def _process_pellet_consumption(
+        self, position: Coordinate, pellet_set: set[Coordinate]
+    ) -> None:
+        """Remove pellet from set, update counts, and evaluate completion."""
+        pellet_set.remove(position)
+        self.consume_pacgum()
+        if len(self.pacgums) == 0:
+            self.completed = True
+
     def consume_pacgum_at(self, position: Coordinate) -> str | None:
         """Consume pellet at the specified coordinate and return its type."""
         if position in self.super_pacgums:
-            self.super_pacgums.remove(position)
-            self.consume_pacgum()
-            if len(self.pacgums) == 0:
-                self.completed = True
+            self._process_pellet_consumption(position, self.super_pacgums)
             return "super_pacgum"
 
         if position in self.pacgums:
-            self.pacgums.remove(position)
-            self.consume_pacgum()
-            if len(self.pacgums) == 0:
-                self.completed = True
+            self._process_pellet_consumption(position, self.pacgums)
             return "pacgum"
 
         return None

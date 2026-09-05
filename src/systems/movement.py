@@ -9,6 +9,18 @@ class MovementSystem:
     """Handle movement calculations for game entities."""
 
     @staticmethod
+    def _get_direction_offset(direction: Direction) -> Coordinate:
+        """Return the coordinate delta for a movement direction."""
+        movement_offsets: dict[Direction, Coordinate] = {
+            Direction.NONE: (0, 0),
+            Direction.UP: (0, -1),
+            Direction.RIGHT: (1, 0),
+            Direction.DOWN: (0, 1),
+            Direction.LEFT: (-1, 0),
+        }
+        return movement_offsets.get(direction, (0, 0))
+
+    @staticmethod
     def calculate_next_position(
         entity: Entity,
         maze: Maze,
@@ -19,16 +31,9 @@ class MovementSystem:
         movement restrictions are handled by the appropriate collision system.
         """
         current_x, current_y = entity.position
-
-        movement_offsets: dict[Direction, Coordinate] = {
-            Direction.NONE: (0, 0),
-            Direction.UP: (0, -1),
-            Direction.RIGHT: (1, 0),
-            Direction.DOWN: (0, 1),
-            Direction.LEFT: (-1, 0),
-        }
-
-        offset_x, offset_y = movement_offsets[entity.direction]
+        offset_x, offset_y = MovementSystem._get_direction_offset(
+            entity.direction
+        )
 
         next_x = current_x + offset_x
         next_y = current_y + offset_y

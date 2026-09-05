@@ -199,6 +199,14 @@ class GhostRenderer(Renderer):
             (center_x + eye_dx + 1, center_y - 3), 1
         )
 
+    def _compute_draw_coordinates(
+        self, vx: float, vy: float, margin: int
+    ) -> tuple[int, int]:
+        """Convert float grid position into pixel screen coordinates."""
+        px = self.offset_x + round(vx * self.cell_size) + margin
+        py = self.offset_y + round(vy * self.cell_size) + margin
+        return px, py
+
     def _render_to_surface(self) -> None:
         """Draw Ghost to the destination Pygame surface."""
         if self.surface is None or self.ghost is None:
@@ -212,8 +220,7 @@ class GhostRenderer(Renderer):
 
         sprite_size = max(16, round(self.cell_size * 28.0 / 36.0))
         margin = (self.cell_size - sprite_size) // 2
-        px = self.offset_x + round(vx * self.cell_size) + margin
-        py = self.offset_y + round(vy * self.cell_size) + margin
+        px, py = self._compute_draw_coordinates(vx, vy, margin)
 
         state = getattr(self.ghost, "state", GhostState.CHASE)
         if state is not GhostState.RETURN_HOME:

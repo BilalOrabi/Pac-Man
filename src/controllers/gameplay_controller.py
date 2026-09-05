@@ -361,6 +361,22 @@ class GameplayController:
             elif not is_powered and ghost.state is GhostState.FLEE:
                 ghost.state = GhostState.CHASE
 
+    def _apply_player_death(
+        self, player: Any, entry_pos: tuple[int, int]
+    ) -> None:
+        """Deduct life, trigger death audio, and reset player position."""
+        self.audio_events.append("death")
+        if self.lives_system.remaining_lives > 0:
+            self.lives_system.lose_life()
+        if player.lives > 0:
+            player.lose_life()
+        player.reset_position(entry_pos)
+        self.player_timer = 0.0
+        if hasattr(player, "movement_progress"):
+            player.movement_progress = 0.0
+        if hasattr(player, "target_position"):
+            player.target_position = None
+
     def _process_ghost_collision(
         self, player: Any, ghost: Any, level: Level, is_powered: bool
     ) -> None:
@@ -382,17 +398,20 @@ class GameplayController:
                 )
             )
             if not invincible:
-                self.audio_events.append("death")
-                if self.lives_system.remaining_lives > 0:
-                    self.lives_system.lose_life()
-                if player.lives > 0:
-                    player.lose_life()
-                player.reset_position(level.maze.entry)
-                self.player_timer = 0.0
-                if hasattr(player, "movement_progress"):
-                    player.movement_progress = 0.0
-                if hasattr(player, "target_position"):
-                    player.target_position = None
+                self._apply_player_death(player, level.maze.entry)
+
+    @staticmethod
+    def _trigger_ghost_home_cooldown(ghost: Any) -> None:
+        """Set respawn cooldown if returning ghost reached its home tile."""
+        if (
+            ghost.state is GhostState.RETURN_HOME
+            and ghost.position == ghost.home_position
+        ):
+            if getattr(ghost, "respawn_cooldown", 0.0) <= 0.0:
+                ghost.respawn_cooldown = 5.0
+                ghost.direction = Direction.NONE
+                ghost.target_position = None
+                ghost.movement_progress = 0.0
 
     def _handle_entity_collisions(
         self, level: Level, player: Any
@@ -417,15 +436,7 @@ class GameplayController:
             if CollisionSystem.check_entity_collision(player, ghost):
                 self._process_ghost_collision(player, ghost, level, is_powered)
 
-            if (
-                ghost.state is GhostState.RETURN_HOME
-                and ghost.position == ghost.home_position
-            ):
-                if getattr(ghost, "respawn_cooldown", 0.0) <= 0.0:
-                    ghost.respawn_cooldown = 5.0
-                    ghost.direction = Direction.NONE
-                    ghost.target_position = None
-                    ghost.movement_progress = 0.0
+            self._trigger_ghost_home_cooldown(ghost)
 
     def update(
         self,
@@ -459,6 +470,27 @@ class GameplayController:
         self._update_ghosts(level, player, elapsed_seconds)
         self._handle_entity_collisions(level, player)
 
+    def _reset_player_binding(self, player: Any) -> None:
+        """Bind and reset player state for level initialization."""
+        self.player_controller.player = player
+        self.player_controller.buffered_direction = None
+        if hasattr(player, "movement_progress"):
+            player.movement_progress = 0.0
+        if hasattr(player, "target_position"):
+            player.target_position = None
+        if hasattr(self.lives_system, "reset"):
+            self.lives_system.reset(player.lives)
+
+    def _reset_ghost_bindings(self, ghosts: list[Any]) -> None:
+        """Bind and reset ghost states for level initialization."""
+        for gc, ghost in zip(self.ghost_controllers, ghosts):
+            gc.ghost = ghost
+            ghost.respawn_cooldown = 0.0
+            if hasattr(ghost, "movement_progress"):
+                ghost.movement_progress = 0.0
+            if hasattr(ghost, "target_position"):
+                ghost.target_position = None
+
     def reset_level(self, level: Level) -> None:
         """Reset gameplay timing and entity bindings for a new level."""
         self.timer_system.reset(level)
@@ -468,19 +500,6 @@ class GameplayController:
         self.wave_timer = 0.0
         self.is_scatter_wave = False
         if hasattr(level, "player") and level.player is not None:
-            self.player_controller.player = level.player
-            self.player_controller.buffered_direction = None
-            if hasattr(level.player, "movement_progress"):
-                level.player.movement_progress = 0.0
-            if hasattr(level.player, "target_position"):
-                level.player.target_position = None
-            if hasattr(self.lives_system, "reset"):
-                self.lives_system.reset(level.player.lives)
+            self._reset_player_binding(level.player)
         if hasattr(level, "ghosts") and level.ghosts:
-            for gc, ghost in zip(self.ghost_controllers, level.ghosts):
-                gc.ghost = ghost
-                ghost.respawn_cooldown = 0.0
-                if hasattr(ghost, "movement_progress"):
-                    ghost.movement_progress = 0.0
-                if hasattr(ghost, "target_position"):
-                    ghost.target_position = None
+            self._reset_ghost_bindings(level.ghosts)

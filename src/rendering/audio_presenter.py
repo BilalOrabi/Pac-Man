@@ -173,6 +173,20 @@ class AudioPresenter:
         """Play extra life cheat sound."""
         self.play_sound("cheat_extra_life")
 
+    def _sync_playing_audio(
+        self,
+        state_changed: bool,
+        invincibility_active: bool,
+    ) -> None:
+        """Handle music track synchronization during active gameplay."""
+        if state_changed:
+            self.play_music("game_start", loops=0)
+        elif invincibility_active:
+            if self.current_music_track != "invincibility":
+                self.play_music("invincibility", loops=-1)
+        elif self.current_music_track == "invincibility":
+            self.stop_music()
+
     def sync_music_state(
         self,
         game_state_name: str,
@@ -195,13 +209,7 @@ class AudioPresenter:
             if self.current_music_track != "victory":
                 self.play_music("victory", loops=-1)
         elif game_state_name == "PLAYING":
-            if state_changed:
-                self.play_music("game_start", loops=0)
-            elif invincibility_active:
-                if self.current_music_track != "invincibility":
-                    self.play_music("invincibility", loops=-1)
-            elif self.current_music_track == "invincibility":
-                self.stop_music()
+            self._sync_playing_audio(state_changed, invincibility_active)
 
     def shutdown(self) -> None:
         """Shut down presentation audio cleanly."""

@@ -39,6 +39,19 @@ class PlayerController:
         self.player.direction = direction
         self.buffered_direction = None
 
+    @staticmethod
+    def _is_opposite_direction(
+        current: Direction, target: Direction
+    ) -> bool:
+        """Check if target direction is the direct reverse of current."""
+        opposites = {
+            Direction.UP: Direction.DOWN,
+            Direction.DOWN: Direction.UP,
+            Direction.LEFT: Direction.RIGHT,
+            Direction.RIGHT: Direction.LEFT,
+        }
+        return opposites.get(current) == target
+
     def handle_action(
         self, action: InputAction, maze: Maze | None = None
     ) -> None:
@@ -47,16 +60,9 @@ class PlayerController:
         if direction is None:
             return
 
-        opposites = {
-            Direction.UP: Direction.DOWN,
-            Direction.DOWN: Direction.UP,
-            Direction.LEFT: Direction.RIGHT,
-            Direction.RIGHT: Direction.LEFT,
-        }
-
         if (
             self.player.direction is not Direction.NONE
-            and opposites.get(self.player.direction) == direction
+            and self._is_opposite_direction(self.player.direction, direction)
         ):
             self._reverse_movement(direction)
             return

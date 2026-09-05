@@ -12,15 +12,19 @@ class PersistenceManager:
         """Create a persistence manager for the specified file."""
         self.file_path = Path(file_path)
 
+    def _ensure_parent_directory(self) -> None:
+        """Create parent directory hierarchy if it does not exist."""
+        self.file_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
     def save_data(self, data: dict[str, Any]) -> None:
         """Save game data to the persistence file."""
         if not isinstance(data, dict):
             raise TypeError("data must be a dictionary.")
 
-        self.file_path.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+        self._ensure_parent_directory()
 
         with self.file_path.open(
             mode="w",
@@ -31,6 +35,15 @@ class PersistenceManager:
                 persistence_file,
                 indent=4,
             )
+
+    @staticmethod
+    def _validate_loaded_dict(data: Any) -> dict[str, Any]:
+        """Assert loaded JSON data is a dictionary object."""
+        if not isinstance(data, dict):
+            raise ValueError(
+                "Persistence file must contain a JSON object."
+            )
+        return data
 
     def load_data(self) -> dict[str, Any]:
         """Load game data from the persistence file."""
@@ -43,12 +56,7 @@ class PersistenceManager:
         ) as persistence_file:
             loaded_data = json.load(persistence_file)
 
-        if not isinstance(loaded_data, dict):
-            raise ValueError(
-                "Persistence file must contain a JSON object."
-            )
-
-        return loaded_data
+        return self._validate_loaded_dict(loaded_data)
 
     def delete_data(self) -> None:
         """Delete the persistence file if it exists."""

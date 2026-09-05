@@ -56,6 +56,11 @@ class MainGameLoop:
 
         self.game_coordinator.render()
 
+    def _execute_frame(self, elapsed_seconds: float) -> None:
+        """Execute one simulation update and display render step."""
+        self.update(elapsed_seconds)
+        self.render()
+
     def run_once(
         self,
         elapsed_seconds: float,
@@ -71,5 +76,4 @@ class MainGameLoop:
         if not self.is_running:
             return
 
-        self.update(elapsed_seconds)
-        self.render()
+        self._execute_frame(elapsed_seconds)

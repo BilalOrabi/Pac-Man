@@ -86,12 +86,17 @@ class AssetManager:
         }
         return self._lookup_asset(sound_paths, sound_type, "sound type")
 
-    def get_effect(self, effect_type: str) -> str:
-        """Return a configured visual-effect asset path."""
-        self._require_initialization()
+    @staticmethod
+    def _validate_effect_type(effect_type: str) -> None:
+        """Assert effect type is recognized by presentation system."""
         valid_effects = {"power_mode", "death"}
         if effect_type.lower() not in valid_effects:
             raise ValueError(f"Unknown effect type: {effect_type}")
+
+    def get_effect(self, effect_type: str) -> str:
+        """Return a configured visual-effect asset path."""
+        self._require_initialization()
+        self._validate_effect_type(effect_type)
         return ""
 
     def shutdown(self) -> None:

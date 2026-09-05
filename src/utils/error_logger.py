@@ -6,6 +6,11 @@ import sys
 from typing import TextIO
 
 
+def _format_log_line(timestamp: str, text: str) -> str:
+    """Format a log entry with standard timestamp prefix."""
+    return f"[{timestamp}] {text}\n"
+
+
 def _write_timestamped_lines(log_path: str, lines: list[str]) -> None:
     """Append timestamped non-empty lines to the target log file."""
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -14,7 +19,7 @@ def _write_timestamped_lines(log_path: str, lines: list[str]) -> None:
             for line in lines:
                 trimmed = line.strip()
                 if trimmed:
-                    file.write(f"[{now_str}] {trimmed}\n")
+                    file.write(_format_log_line(now_str, trimmed))
     except Exception:
         pass
 
@@ -28,16 +33,20 @@ class ErrorLogStream(io.TextIOBase):
         self.log_path = log_path
         self._buffer: str = ""
 
+    def _process_buffered_lines(self) -> None:
+        """Split buffer by newline and flush completed lines."""
+        if "\n" in self._buffer:
+            lines = self._buffer.split("\n")
+            self._buffer = lines[-1]
+            _write_timestamped_lines(self.log_path, lines[:-1])
+
     def write(self, s: str) -> int:
         """Buffer and write incoming messages into the log file."""
         if not s:
             return 0
 
         self._buffer += s
-        if "\n" in self._buffer:
-            lines = self._buffer.split("\n")
-            self._buffer = lines[-1]
-            _write_timestamped_lines(self.log_path, lines[:-1])
+        self._process_buffered_lines()
         return len(s)
 
     def flush(self) -> None:

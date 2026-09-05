@@ -87,7 +87,6 @@ class ConfigLoader:
         return data
 
     @staticmethod
-    @staticmethod
     def _safe_int(
         data: dict[str, Any],
         key: str,
@@ -166,25 +165,36 @@ class ConfigLoader:
         return (w, h)
 
     @staticmethod
+    def _parse_safe_single_level(
+        idx: int, lvl: Any
+    ) -> LevelConfig | None:
+        """Parse and clamp a single level dictionary if valid."""
+        if not isinstance(lvl, dict):
+            return None
+        w = lvl.get("width")
+        h = lvl.get("height")
+        if (
+            isinstance(w, int)
+            and isinstance(h, int)
+            and not isinstance(w, bool)
+            and not isinstance(h, bool)
+            and w > 0
+            and h > 0
+        ):
+            cw, ch = ConfigLoader._safe_level_dimension(w, h, idx)
+            return LevelConfig(width=cw, height=ch)
+        return None
+
+    @staticmethod
     def _safe_levels(data: dict[str, Any]) -> tuple[LevelConfig, ...]:
         """Parse levels with dimension clamping and default fallback."""
         levels_data = data.get("levels")
         levels: list[LevelConfig] = []
         if isinstance(levels_data, list) and levels_data:
             for idx, lvl in enumerate(levels_data):
-                if isinstance(lvl, dict):
-                    w = lvl.get("width")
-                    h = lvl.get("height")
-                    if (
-                        isinstance(w, int)
-                        and isinstance(h, int)
-                        and not isinstance(w, bool)
-                        and not isinstance(h, bool)
-                        and w > 0
-                        and h > 0
-                    ):
-                        w, h = ConfigLoader._safe_level_dimension(w, h, idx)
-                        levels.append(LevelConfig(width=w, height=h))
+                parsed = ConfigLoader._parse_safe_single_level(idx, lvl)
+                if parsed is not None:
+                    levels.append(parsed)
 
         if not levels:
             ErrorLogger.log(

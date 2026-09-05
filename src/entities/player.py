@@ -15,18 +15,26 @@ class Player(Entity):
     score: int = 0
     is_powered_up: bool = False
 
-    def add_score(self, points: int) -> None:
-        """Increase the player's score by the specified number of points."""
+    @staticmethod
+    def _validate_points(points: int) -> None:
+        """Ensure points being added to the player score are non-negative."""
         if points < 0:
             raise ValueError("Score points cannot be negative.")
 
+    @staticmethod
+    def _validate_remaining_lives(lives: int) -> None:
+        """Ensure the player has at least one remaining life to deduct."""
+        if lives <= 0:
+            raise ValueError("Player has no remaining lives.")
+
+    def add_score(self, points: int) -> None:
+        """Increase the player's score by the specified number of points."""
+        self._validate_points(points)
         self.score += points
 
     def lose_life(self) -> None:
         """Remove one life from the player."""
-        if self.lives <= 0:
-            raise ValueError("Player has no remaining lives.")
-
+        self._validate_remaining_lives(self.lives)
         self.lives -= 1
 
     def activate_power_mode(self) -> None:

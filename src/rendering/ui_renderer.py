@@ -50,18 +50,20 @@ class UIRenderer(Renderer):
 
         self.is_initialized = True
 
+    @staticmethod
+    def _validate_non_negative_int(value: int, name: str) -> None:
+        """Assert value is a non-negative integer."""
+        if value < 0:
+            raise ValueError(f"{name} cannot be negative.")
+
     def set_score(self, score: int) -> None:
         """Set the score displayed by the user interface."""
-        if score < 0:
-            raise ValueError("Score cannot be negative.")
-
+        self._validate_non_negative_int(score, "Score")
         self.score = score
 
     def set_lives(self, lives: int) -> None:
         """Set the number of lives displayed by the user interface."""
-        if lives < 0:
-            raise ValueError("Lives cannot be negative.")
-
+        self._validate_non_negative_int(lives, "Lives")
         self.lives = lives
 
     def set_level_number(self, level_number: int) -> None:
@@ -111,18 +113,13 @@ class UIRenderer(Renderer):
         except Exception:
             return None
 
-    def _render_to_surface(self) -> None:
-        """Draw UI elements onto the Pygame display surface."""
-        if self.surface is None:
-            return
-
-        font = self._get_font(18)
-        header_font = self._get_font(32)
-        if font is None:
-            return
-
-        state = self.game_state_name.upper()
-
+    def _dispatch_screen_render(
+        self,
+        state: str,
+        font: pygame.font.Font,
+        header_font: pygame.font.Font | None,
+    ) -> None:
+        """Dispatch screen rendering based on active state name."""
         if state == "MENU":
             self._render_menu(font, header_font)
         elif state == "PAUSED":
@@ -136,6 +133,19 @@ class UIRenderer(Renderer):
             self._render_enter_name(font, header_font)
         else:
             self._render_hud(font)
+
+    def _render_to_surface(self) -> None:
+        """Draw UI elements onto the Pygame display surface."""
+        if self.surface is None:
+            return
+
+        font = self._get_font(18)
+        header_font = self._get_font(32)
+        if font is None:
+            return
+
+        state = self.game_state_name.upper()
+        self._dispatch_screen_render(state, font, header_font)
 
     def _render_hud(self, font: pygame.font.Font) -> None:
         """Render top in-game HUD banner and cheat bar."""

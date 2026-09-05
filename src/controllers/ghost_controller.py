@@ -29,6 +29,21 @@ class GhostController:
             return True
         return False
 
+    @staticmethod
+    def _map_ghost_state_to_mode(state: GhostState) -> GhostMode:
+        """Map entity GhostState to AI GhostMode."""
+        mode_mapping = {
+            GhostState.CHASE: GhostMode.CHASE,
+            GhostState.FLEE: GhostMode.FLEE,
+            GhostState.RETURN_HOME: GhostMode.RETURN_HOME,
+        }
+        return mode_mapping.get(state, GhostMode.CHASE)
+
+    def _get_valid_target_position(self) -> Coordinate | None:
+        """Return target_position if valid Coordinate tuple, else None."""
+        target = getattr(self.ghost, "target_position", None)
+        return target if isinstance(target, tuple) else None
+
     def _update_ai_direction(
         self,
         maze: Maze,
@@ -38,14 +53,7 @@ class GhostController:
         if self.ai is None:
             return
 
-        mode_mapping = {
-            GhostState.CHASE: GhostMode.CHASE,
-            GhostState.FLEE: GhostMode.FLEE,
-            GhostState.RETURN_HOME: GhostMode.RETURN_HOME,
-        }
-        self.ai.set_mode(
-            mode_mapping.get(self.ghost.state, GhostMode.CHASE)
-        )
+        self.ai.set_mode(self._map_ghost_state_to_mode(self.ghost.state))
         target = (
             target_position
             if target_position is not None
@@ -104,11 +112,7 @@ class GhostController:
         if self._is_on_respawn_cooldown():
             return
 
-        dest = (
-            self.ghost.target_position
-            if isinstance(getattr(self.ghost, "target_position", None), tuple)
-            else None
-        )
+        dest = self._get_valid_target_position()
 
         if dest is not None:
             self.collision_system.move_if_valid(self.ghost, dest, maze)

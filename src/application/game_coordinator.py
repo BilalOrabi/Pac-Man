@@ -24,6 +24,13 @@ class GameCoordinator:
     gameplay_controller: GameplayController | None = None
     cheat_system: CheatSystem | None = None
 
+    def _bind_active_level(self, level: Any) -> None:
+        """Bind level to presentation and gameplay systems."""
+        if hasattr(self.game_renderer, "set_level") and level is not None:
+            self.game_renderer.set_level(level)
+        if self.gameplay_controller is not None and level is not None:
+            self.gameplay_controller.reset_level(level)
+
     def start_game(self) -> None:
         """Start a new Pac-Man game."""
         level = self.game_world.start()
@@ -31,12 +38,7 @@ class GameCoordinator:
         if not self.game_renderer.is_initialized:
             self.game_renderer.initialize()
 
-        if hasattr(self.game_renderer, "set_level") and level is not None:
-            self.game_renderer.set_level(level)
-
-        if self.gameplay_controller is not None and level is not None:
-            self.gameplay_controller.reset_level(level)
-
+        self._bind_active_level(level)
         self.state_machine.transition_to(GameStateType.PLAYING)
 
     def _handle_level_completion(self, level: Any) -> None:
@@ -53,10 +55,7 @@ class GameCoordinator:
             self.state_machine.transition_to(GameStateType.VICTORY)
             return
 
-        if hasattr(self.game_renderer, "set_level"):
-            self.game_renderer.set_level(next_level)
-        if self.gameplay_controller is not None:
-            self.gameplay_controller.reset_level(next_level)
+        self._bind_active_level(next_level)
 
     def _check_game_over_conditions(self, level: Any) -> None:
         """Check if remaining lives or time limit triggered game over."""

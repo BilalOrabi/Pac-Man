@@ -11,6 +11,11 @@ from src.input.input_event import InputAction, InputEvent
 class InputHandler:
     """Convert pygame keyboard events into game input events."""
 
+    @staticmethod
+    def _is_quit_event(pygame_event: pygame.event.Event) -> bool:
+        """Check if event represents application quit request."""
+        return pygame_event.type == pygame.QUIT
+
     def process_event(
             self, pygame_event: pygame.event.Event) -> InputEvent | None:
         """Convert one pygame event into a typed input event.
@@ -24,7 +29,7 @@ class InputHandler:
         if pygame_event.type == pygame.KEYDOWN:
             return self._process_keydown_event(pygame_event)
 
-        if pygame_event.type == pygame.QUIT:
+        if self._is_quit_event(pygame_event):
             return InputEvent(action=InputAction.QUIT_GAME)
 
         return None

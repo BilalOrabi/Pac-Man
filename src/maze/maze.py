@@ -97,22 +97,32 @@ class Maze:
             )
         return True
 
+    def _are_positions_valid(
+        self, from_pos: Coordinate, to_pos: Coordinate
+    ) -> bool:
+        """Check whether both coordinates lie within maze dimensions."""
+        return self.is_inside(*from_pos) and self.is_inside(*to_pos)
+
+    @staticmethod
+    def _are_cells_clear(
+        from_cell: MazeCell, to_cell: MazeCell
+    ) -> bool:
+        """Check whether neither cell is a solid obstacle block."""
+        return not (from_cell.is_solid_block or to_cell.is_solid_block)
+
     def can_move(
         self,
         from_position: Coordinate,
         to_position: Coordinate,
     ) -> bool:
         """Return whether movement between adjacent cells is permitted."""
-        if (
-            not self.is_inside(*from_position)
-            or not self.is_inside(*to_position)
-        ):
+        if not self._are_positions_valid(from_position, to_position):
             return False
 
         from_cell = self.get_cell(from_position)
         to_cell = self.get_cell(to_position)
 
-        if from_cell.is_solid_block or to_cell.is_solid_block:
+        if not self._are_cells_clear(from_cell, to_cell):
             return False
 
         delta_x = to_position[0] - from_position[0]

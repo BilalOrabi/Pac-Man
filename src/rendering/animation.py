@@ -29,6 +29,11 @@ class Animation:
             1.0,
         )
 
+    def _complete_animation(self) -> None:
+        """Mark animation as reached duration and completed."""
+        self.elapsed_time = self.duration
+        self.is_finished = True
+
     def update(self, elapsed_seconds: float) -> None:
         """Advance the animation by the elapsed time."""
         if elapsed_seconds < 0:
@@ -42,8 +47,7 @@ class Animation:
         self.elapsed_time += elapsed_seconds
 
         if self.elapsed_time >= self.duration:
-            self.elapsed_time = self.duration
-            self.is_finished = True
+            self._complete_animation()
 
     def reset(self) -> None:
         """Reset the animation to its initial state."""

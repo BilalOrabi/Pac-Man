@@ -212,6 +212,57 @@ class MazeRenderer(Renderer):
                     cell, px, py, wall_block_img, wall_color, line_width
                 )
 
+    def _render_regular_pacgums(
+        self,
+        pacgums: set[tuple[int, int]],
+        half: int,
+        dot_size: int,
+        dot_img: Any,
+    ) -> None:
+        """Draw regular pacgums across open corridors."""
+        for gx, gy in pacgums:
+            dot_x = self.offset_x + gx * self.cell_size + half
+            dot_y = self.offset_y + gy * self.cell_size + half
+            if dot_img is not None:
+                self.surface.blit(
+                    dot_img,
+                    (dot_x - dot_size // 2, dot_y - dot_size // 2),
+                )
+            else:
+                pygame.draw.circle(
+                    self.surface,
+                    (255, 184, 151),
+                    (dot_x, dot_y),
+                    max(2, self.cell_size // 8),
+                )
+
+    def _render_super_pacgums(
+        self,
+        super_pacgums: set[tuple[int, int]],
+        half: int,
+        super_dot_size: int,
+        super_dot_img: Any,
+    ) -> None:
+        """Draw flashing super-pacgums in maze corners."""
+        for sx, sy in super_pacgums:
+            dot_x = self.offset_x + sx * self.cell_size + half
+            dot_y = self.offset_y + sy * self.cell_size + half
+            if super_dot_img is not None:
+                self.surface.blit(
+                    super_dot_img,
+                    (
+                        dot_x - super_dot_size // 2,
+                        dot_y - super_dot_size // 2,
+                    ),
+                )
+            else:
+                pygame.draw.circle(
+                    self.surface,
+                    (255, 200, 180),
+                    (dot_x, dot_y),
+                    max(4, self.cell_size // 4),
+                )
+
     def _render_pellets(self) -> None:
         """Draw pacgums and super-pacgums in open corridors."""
         if self.level is None:
@@ -231,43 +282,14 @@ class MazeRenderer(Renderer):
         pacgums: set[tuple[int, int]] = getattr(
             self.level, "pacgums", set()
         )
-        for gx, gy in pacgums:
-            dot_x = self.offset_x + gx * self.cell_size + half
-            dot_y = self.offset_y + gy * self.cell_size + half
-            if dot_img is not None:
-                self.surface.blit(
-                    dot_img,
-                    (dot_x - dot_size // 2, dot_y - dot_size // 2),
-                )
-            else:
-                pygame.draw.circle(
-                    self.surface,
-                    (255, 184, 151),
-                    (dot_x, dot_y),
-                    max(2, self.cell_size // 8),
-                )
+        self._render_regular_pacgums(pacgums, half, dot_size, dot_img)
 
         super_pacgums: set[tuple[int, int]] = getattr(
             self.level, "super_pacgums", set()
         )
-        for sx, sy in super_pacgums:
-            dot_x = self.offset_x + sx * self.cell_size + half
-            dot_y = self.offset_y + sy * self.cell_size + half
-            if super_dot_img is not None:
-                self.surface.blit(
-                    super_dot_img,
-                    (
-                        dot_x - super_dot_size // 2,
-                        dot_y - super_dot_size // 2,
-                    ),
-                )
-            else:
-                pygame.draw.circle(
-                    self.surface,
-                    (255, 200, 180),
-                    (dot_x, dot_y),
-                    max(4, self.cell_size // 4),
-                )
+        self._render_super_pacgums(
+            super_pacgums, half, super_dot_size, super_dot_img
+        )
 
     def _render_to_surface(self) -> None:
         """Draw maze corridors, walls, and pellets to the Pygame surface."""

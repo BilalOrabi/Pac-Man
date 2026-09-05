@@ -51,5 +51,5 @@ class VisualEffect:
 
     def restart(self) -> None:
         """Enable and restart the effect."""
-        self.is_enabled = True
-        self.animation.reset()
+        self.enable()
+        self.reset()

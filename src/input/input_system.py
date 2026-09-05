@@ -18,12 +18,15 @@ class InputSystem:
         self.input_handler = input_handler or InputHandler()
         self.input_manager = input_manager or InputManager()
 
+    def _dispatch_single_event(
+        self, pygame_event: pygame.event.Event
+    ) -> None:
+        """Process and route one Pygame event through the input manager."""
+        input_event = self.input_handler.process_event(pygame_event)
+        if input_event is not None:
+            self.input_manager.process_event(input_event)
+
     def process_events(self) -> None:
         """Process all currently queued Pygame events."""
         for pygame_event in pygame.event.get():
-            input_event = self.input_handler.process_event(
-                pygame_event
-            )
-
-            if input_event is not None:
-                self.input_manager.process_event(input_event)
+            self._dispatch_single_event(pygame_event)

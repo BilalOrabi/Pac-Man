@@ -45,13 +45,17 @@ class GameRenderer:
             offset_y = 50 + (h - 50 - mh * cell_size) // 2
             self.configure_layout(cell_size, offset_x, offset_y)
 
-    def set_surface(self, surface: object) -> None:
-        """Propagate the presentation surface to child renderers."""
+    def _propagate_surface(self, surface: object) -> None:
+        """Assign drawing surface to all child sub-renderers."""
         self.maze_renderer.surface = surface
         self.player_renderer.surface = surface
         for ghost_renderer in self.ghost_renderers:
             ghost_renderer.surface = surface
         self.ui_renderer.surface = surface
+
+    def set_surface(self, surface: object) -> None:
+        """Propagate the presentation surface to child renderers."""
+        self._propagate_surface(surface)
 
         maze = getattr(self.maze_renderer, "maze", None)
         self._recompute_layout(surface, maze)

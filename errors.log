@@ -1,0 +1,47 @@
+[2026-09-06 00:17:00] Warning: Invalid or missing 'highscore_filename'. Using default: 'highscores.json'.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'lives' (-5). Clamping to default: 3.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'pacgum' (None). Clamping to default: 42.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'points_per_pacgum' (None). Clamping to default: 10.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'points_per_super_pacgum' (None). Clamping to default: 50.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'points_per_ghost' (None). Clamping to default: 200.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
+[2026-09-06 00:17:00] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
+[2026-09-06 00:17:00] Warning: No valid levels found. Using standard 10 default levels.
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:19:50] MazeGenerator Warning: maze is too small to add '42' in it
+[2026-09-06 00:20:21] Warning: Invalid or missing 'highscore_filename'. Using default: 'highscores.json'.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'lives' (-5). Clamping to default: 3.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'pacgum' (None). Clamping to default: 42.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'points_per_pacgum' (None). Clamping to default: 10.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'points_per_super_pacgum' (None). Clamping to default: 50.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'points_per_ghost' (None). Clamping to default: 200.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
+[2026-09-06 00:20:21] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
+[2026-09-06 00:20:21] Warning: No valid levels found. Using standard 10 default levels.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'highscore_filename'. Using default: 'highscores.json'.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'lives' (-5). Clamping to default: 3.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'pacgum' (None). Clamping to default: 42.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'points_per_pacgum' (None). Clamping to default: 10.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'points_per_super_pacgum' (None). Clamping to default: 50.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'points_per_ghost' (None). Clamping to default: 200.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
+[2026-09-06 00:20:34] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
+[2026-09-06 00:20:34] Warning: No valid levels found. Using standard 10 default levels.
+[2026-09-06 00:23:04] Audio hardware initialization failed: No audio device
+[2026-09-06 00:23:04] Failed to stop audio: mixer not initialized
+[2026-09-06 00:24:06] Warning: Invalid or missing 'highscore_filename'. Using default: 'highscores.json'.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'lives' (-5). Clamping to default: 3.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'pacgum' (None). Clamping to default: 42.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'points_per_pacgum' (None). Clamping to default: 10.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'points_per_super_pacgum' (None). Clamping to default: 50.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'points_per_ghost' (None). Clamping to default: 200.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'level_max_time' (None). Clamping to default: 90.
+[2026-09-06 00:24:06] Warning: Invalid or missing 'power_mode_duration' (None). Clamping to default: 7.0.
+[2026-09-06 00:24:06] Warning: No valid levels found. Using standard 10 default levels.

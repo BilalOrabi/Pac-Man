@@ -116,7 +116,7 @@ Gameplay is fully configurable via `config.json`. The configuration loader is **
 - **Fault-Tolerant Fallback**: If any level specifies dimensions outside $5 \le \text{width} \le 35$ or $5 \le \text{height} \le 24$, an informative timestamped warning is appended to `errors.log` and the level safely defaults to $19 \times 21$ without crashing or skipping levels.
 - **Silent Terminal Execution**: The application routes all external library messages (such as `mazegenerator` notices), JSON parsing warnings, and dimension warnings directly into `errors.log`, leaving terminal console stdout and stderr completely clean.
 
-### Engine-Locked Speeds (Optional in JSON)
+### Engine-Locked Speeds
 To guarantee predictable 60 FPS sub-tile physics and arcade pacing, movement speeds are permanently locked to engine constants and decoupled from user JSON inputs:
 - `player_speed`: `2.1429` tiles/second
 - `ghost_speed`: `1.8214` tiles/second (~85% of player speed)
@@ -244,15 +244,6 @@ flowchart TD
     CONTROLLER --> SCORES
 ```
 
-### Theme & Asset Separation: The Arabian Desert Theme
-Visual and audio assets are strictly centralized in `AssetManager` (`src/theme/asset_manager.py`). Changing visual themes only requires modifying asset configurations—**never** the gameplay entities or systems.
-
-The default presentation showcases a custom, fully realized **Arabian Desert Theme**:
-- **Pac-Man**: Features custom Arabian attire (Shemagh, Agal, and white Thobe) with smooth 4-directional 3-frame chomping animations (`pacman-up`, `pacman-down`, `pacman-left`, `pacman-right`) smoothly scaled to any cell dimension.
-- **Ghosts**: Differentiated ghost personalities sporting custom "42" trucker caps (`ghost_red.png`, `ghost_pink.png`, `ghost_blue.png`, `ghost_orange.png`) and a meme crying frightened ghost sprite (`ghost_frightened.png`).
-- **Pellets & Environment**: Golden-brown Arabian Dates (Tamr) for pacgums, glowing emerald-inlaid Saudi Dallah coffee pots for super-pacgums, and sandstone desert brick blocks for walls.
-- **Atmospheric Backdrops**: Starry Arabian Desert Night in-game playing background (`game_background.jpg`), triumphant Palace Terrace Fireworks victory screen (`victory_background.jpg`), and comic desert camp defeat game over screen (`game_over_background.jpg`) with matching frosted-glass name entry cards.
-
 ---
 
 ## 9. Project Management
@@ -272,16 +263,16 @@ Comprehensive project management documentation and artifacts are located in [`do
 The codebase strictly adheres to 42 School software standards:
 
 ```bash
-# Run the complete test suite (525 passed in ~1.0s)
+# Run the complete test suite 
 uv run pytest
 
 # Check style compliance (0 warnings across repository)
 uv run flake8 --exclude .venv,dist .
 
-# Check static typing compliance (0 errors across 78 source files)
+# Check static typing compliance (0 errors across source files)
 uv run mypy --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs src/ pac-man.py package.py
 
-# Build standalone distribution package (dist/pacman_release.zip, 1.49 MB)
+# Build standalone distribution package (dist/pacman_linux.zip)
 uv run python package.py
 ```
 
@@ -289,5 +280,5 @@ uv run python package.py
 
 ## 11. Authors
 
-- **Bilal Orabi** (`borabi`) — Architecture, Systems & Ghost AI
-- **Hamza Qasqas** (`hqasqas`) — Presentation, UI & Packaging
+- **Bilal Orabi** (`borabi`)
+- **Hamza Qasqas** (`hqasqas`)

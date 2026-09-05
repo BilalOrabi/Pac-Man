@@ -13,22 +13,23 @@ class InputManager:
         """Initialize the input manager with an empty input state."""
         self.input_state = InputState()
 
+    def _apply_action(self, action: InputAction) -> None:
+        """Apply input action to update or reset movement state."""
+        movement_direction = InputMapper.get_direction(action)
+        if movement_direction is not None:
+            self.input_state.set_direction(movement_direction)
+            return
+
+        if action is InputAction.RESTART_GAME:
+            self.input_state.clear_direction()
+
     def process_event(self, input_event: InputEvent) -> None:
         """Process an input event and update the input state.
 
         Args:
             input_event: Event produced by the input handler.
         """
-        movement_direction = InputMapper.get_direction(
-            input_event.action
-        )
-
-        if movement_direction is not None:
-            self.input_state.set_direction(movement_direction)
-            return
-
-        if input_event.action is InputAction.RESTART_GAME:
-            self.input_state.clear_direction()
+        self._apply_action(input_event.action)
 
     def get_requested_direction(self) -> Direction:
         """Return the direction currently requested by the player."""

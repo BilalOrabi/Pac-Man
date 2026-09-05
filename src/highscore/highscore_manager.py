@@ -38,15 +38,23 @@ class HighscoreManager:
             return False
         return all(c.isalnum() or c == " " for c in player_name)
 
-    def add_score(self, player_name: str, score: int) -> None:
-        """Add a score and keep the leaderboard ordered."""
+    def _validate_score_input(self, player_name: str, score: int) -> None:
+        """Validate candidate score submission parameters."""
         if not self.validate_player_name(player_name):
             raise ValueError(
                 "player_name must be 1 to 10 alphanumeric/space chars."
             )
-
         if score < 0:
             raise ValueError("score cannot be negative.")
+
+    def _sort_and_truncate(self) -> None:
+        """Sort entries descending by score and clamp to maximum_entries."""
+        self._sort_entries()
+        self.entries = self.entries[: self.maximum_entries]
+
+    def add_score(self, player_name: str, score: int) -> None:
+        """Add a score and keep the leaderboard ordered."""
+        self._validate_score_input(player_name, score)
 
         self.entries.append(
             HighscoreEntry(
@@ -55,8 +63,7 @@ class HighscoreManager:
             )
         )
 
-        self._sort_entries()
-        self.entries = self.entries[: self.maximum_entries]
+        self._sort_and_truncate()
 
     def get_entries(self) -> list[HighscoreEntry]:
         """Return the current high-score entries."""
