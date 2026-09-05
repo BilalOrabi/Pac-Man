@@ -1,30 +1,26 @@
 {
-  # Lines starting with # are comments and will be ignored by ConfigLoader # 1.0714
+  # Lines starting with "#" or "//" are comments and will be ignored by ConfigLoader
   "highscore_filename": "highscores.json",
   "lives": 3,
-  "pacgum": 120,
+  "pacgum": 200,
   "points_per_pacgum": 10,
   "points_per_super_pacgum": 50,
   "points_per_ghost": 200,
   "seed": 42,
   "level_max_time": 999,
-  # Movement speeds (permanently locked in engine code to guarantee smooth 60 FPS movement and animations)
-  "player_speed": 2.1429,
-  "ghost_speed": 1.8214,
-  "frightened_ghost_speed": 10,
-  "returning_ghost_speed": 3.5,
   "power_mode_duration": 7.0,
-  "levels": [
-    { "width": 10, "height": 12 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 },
-    { "width": 19, "height": 21 }
-  ]
+"levels": [
+    { "width": 14, "height": 14 },
+    { "width": 15, "height": 11 },
+    { "width": 17, "height": 17 },
+    { "width": 19, "height": 19 },
+    { "width": 21, "height": 19 },
+    { "width": 21, "height": 21 },
+    { "width": 23, "height": 21 },
+    { "width": 25, "height": 21 },
+    { "width": 27, "height": 23 },
+    { "width": 29, "height": 23 },
+    { "width": 31, "height": 24 }
+]
 }
 

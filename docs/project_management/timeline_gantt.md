@@ -15,7 +15,8 @@ The 42 School Pac-Man project was organized into sequential workstreams designed
 | **M5** | State Machine & Application Coordinator | 2 days | 2 days | **Complete** |
 | **M6** | Pygame Graphical Presentation & UI Layer | 5 days | 5 days | **Complete** |
 | **M7** | Standalone Packaging (itch.io / Steam Specs) | 2 days | 2 days | **Complete** |
-| **M8** | Documentation, PM Artifacts & Final Audit | 2 days | 2 days | **Complete** |
+| **M8** | Documentation, PM Artifacts & Baseline Audit | 2 days | 2 days | **Complete** |
+| **M9** | Arabian Theme, Silent Logging & Readability Refactoring | 2 days | 2 days | **Complete** |
 
 ---
 
@@ -57,7 +58,13 @@ gantt
     section Release & Verification
     Packaging Script & PyInstaller Spec :done, m7_1, 2026-09-02, 1d
     Project Management & Comprehensive Docs:done, m8_1, 2026-09-03, 2d
-    Flake8, Mypy & 480 Tests Verification:done, m8_2, 2026-09-04, 1d
+
+    section Polish & Refactoring
+    Arabian Theme Suite & Chomping Frames :done, m9_1, 2026-09-04, 1d
+    Fixed 1600x900 & '42' Safe Entry      :done, m9_2, 2026-09-05, 1d
+    Errors.log Silent Interception        :done, m9_3, 2026-09-05, 1d
+    Folder-by-Folder SRP Refactoring      :done, m9_4, 2026-09-05, 1d
+    Flake8, Mypy & 525 Tests Verification :done, m9_5, 2026-09-05, 1d
 ```
 
 ---
@@ -81,7 +88,8 @@ To ensure clean code, zero regressions, and strict peer-review compliance, each 
   - 1.1 Robust JSON parser with safe fallback defaults
   - 1.2 Comment line filtering (`#` and `//`)
   - 1.3 High-score JSON persistence with rank ordering
-  - 1.4 Name validation (1-10 chars, alphanumeric + spaces)
+  - 1.4 Name validation (1-10 chars, uppercase, lowercase, digits, spaces)
+  - 1.5 Centralized logging stream and console silencing (`errors.log`)
 
 - **2. Core Domain Tier**
   - 2.1 Maze cell representation and bitmask walls
@@ -91,6 +99,7 @@ To ensure clean code, zero regressions, and strict peer-review compliance, each 
   - 2.5 Scoring, Lives, Power Mode, and Level Timer systems
   - 2.6 Ghost personalities and target tile calculations
   - 2.7 Cheat suite (Invincibility, Ghost Freeze, Speed, Extra Life, Skip)
+  - 2.8 Safe entry calculation avoiding solid blocks of the '42' logo (width 14)
 
 - **3. Application & State Tier**
   - 3.1 State machine (`MENU`, `PLAYING`, `PAUSED`, `GAME_OVER`, `VICTORY`, `ENTER_NAME`)
@@ -99,12 +108,14 @@ To ensure clean code, zero regressions, and strict peer-review compliance, each 
 
 - **4. Presentation & UI Tier**
   - 4.1 AssetManager and fallback asset paths
-  - 4.2 Pygame display initialization and 60 FPS clock
-  - 4.3 Procedural maze wall and pellet drawing
-  - 4.4 Pac-Man and Ghost sprite drawing with frightened/return-home states
+  - 4.2 Native fixed $1600 \times 900$ display and 60 FPS clock
+  - 4.3 Procedural maze wall and pellet drawing with automatic centering
+  - 4.4 Pac-Man directional chomping animations and ghost sprites with 42 caps
   - 4.5 Full HUD, Main Menu, Instructions, Leaderboard, and Name Entry UI
+  - 4.6 Custom Arabian desert theme asset suite (dates, dallah, backdrops)
 
-- **5. Release & Delivery Tier**
+- **5. Release, Refactoring & Delivery Tier**
   - 5.1 PyInstaller bundle specification (`pacman.spec`)
-  - 5.2 Standalone packaging script (`package.py`)
+  - 5.2 Standalone packaging script (`package.py`) with asset pruning (1.49 MB zip)
   - 5.3 Player manual and release documentation (`INSTRUCTIONS.txt`, `README.md`)
+  - 5.4 Single-responsibility refactoring across all 17 directories and 525 tests

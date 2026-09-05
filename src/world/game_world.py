@@ -37,8 +37,8 @@ class GameWorld:
 
         return self.current_level
 
-    def advance_to_next_level(self) -> Level | None:
-        """Create and activate the next configured level."""
+    def _get_preserved_player_stats(self) -> tuple[int, int]:
+        """Extract score and lives from the current level player."""
         preserved_score = 0
         preserved_lives = self.game_configuration.lives
         if (
@@ -47,6 +47,11 @@ class GameWorld:
         ):
             preserved_score = self.current_level.player.score
             preserved_lives = self.current_level.player.lives
+        return (preserved_score, preserved_lives)
+
+    def advance_to_next_level(self) -> Level | None:
+        """Create and activate the next configured level."""
+        preserved_score, preserved_lives = self._get_preserved_player_stats()
 
         next_level_index = self.current_level_index + 1
 

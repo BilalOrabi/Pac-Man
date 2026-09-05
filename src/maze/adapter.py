@@ -1,8 +1,12 @@
 """Adapter between the external A-Maze-ing package and the game domain."""
 
+import io
+import sys
+
 from mazegenerator import MazeGenerator
 
 from src.maze.maze import Coordinate, Maze, MazeGrid, MazeCell, Wall
+from src.utils.error_logger import ErrorLogger
 
 
 class MazeGenerationError(Exception):
@@ -11,6 +15,60 @@ class MazeGenerationError(Exception):
 
 class MazeAdapter:
     """Convert A-Maze-ing output into project-owned domain models."""
+
+    FT_SMALL_PATTERN = (
+        (1, 0, 0, 0, 1, 1, 1),
+        (1, 0, 0, 0, 0, 0, 1),
+        (1, 1, 1, 0, 1, 1, 1),
+        (0, 0, 1, 0, 1, 0, 0),
+        (0, 0, 1, 0, 1, 1, 1),
+    )
+
+    @classmethod
+    def _is_42_solid_cell(
+        cls,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> bool:
+        """Check if (x, y) overlaps with the generator's '42' logo."""
+        pattern_h = len(cls.FT_SMALL_PATTERN)
+        pattern_w = len(cls.FT_SMALL_PATTERN[0])
+        if pattern_h * 2 > height or pattern_w * 2 > width:
+            return False
+
+        pos_y = int((height - pattern_h) / 2)
+        pos_x = int((width - pattern_w) / 2)
+        rel_x = x - pos_x
+        rel_y = y - pos_y
+
+        if 0 <= rel_y < pattern_h and 0 <= rel_x < pattern_w:
+            return cls.FT_SMALL_PATTERN[rel_y][rel_x] == 1
+        return False
+
+    @classmethod
+    def _find_safe_entry(
+        cls,
+        width: int,
+        height: int,
+        preferred_entry: Coordinate,
+    ) -> Coordinate:
+        """Find the closest corridor cell to preferred entry avoiding '42'."""
+        px, py = preferred_entry
+        if not cls._is_42_solid_cell(px, py, width, height):
+            return preferred_entry
+
+        best_cell = preferred_entry
+        min_dist = float("inf")
+        for y in range(1, height - 1):
+            for x in range(1, width - 1):
+                if not cls._is_42_solid_cell(x, y, width, height):
+                    dist = abs(x - px) + abs(y - py)
+                    if dist < min_dist:
+                        min_dist = dist
+                        best_cell = (x, y)
+        return best_cell
 
     def generate_level(
         self,
@@ -38,17 +96,19 @@ class MazeAdapter:
             ValueError: If the requested dimensions or coordinates are invalid.
         """
         self._validate_dimensions(width, height)
-        actual_entry = (
+        preferred_entry = (
             entry_cell
             if entry_cell is not None
             else (width // 2, height // 2)
         )
         self._validate_coordinate(
-            actual_entry,
+            preferred_entry,
             width,
             height,
             "entry",
         )
+
+        actual_entry = self._find_safe_entry(width, height, preferred_entry)
 
         if exit_cell is not None:
             self._validate_coordinate(
@@ -116,7 +176,19 @@ class MazeAdapter:
         if exit_cell is not None:
             kwargs["exit_cell"] = exit_cell
 
-        return MazeGenerator(**kwargs)
+        old_stdout = sys.stdout
+        buf = io.StringIO()
+        try:
+            sys.stdout = buf
+            generator = MazeGenerator(**kwargs)
+        finally:
+            sys.stdout = old_stdout
+
+        warning_text = buf.getvalue().strip()
+        if warning_text:
+            ErrorLogger.log(warning_text)
+
+        return generator
 
     @staticmethod
     def _parse_bitmask_grid(

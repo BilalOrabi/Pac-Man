@@ -72,6 +72,24 @@ class GhostRenderer(Renderer):
         if self.surface is not None and self.ghost is not None:
             self._render_to_surface()
 
+    def _resolve_ghost_sprite_path(self, state: GhostState) -> str | None:
+        """Resolve file path for the current ghost sprite."""
+        if not self.ghost:
+            return None
+
+        if state is GhostState.FLEE:
+            return os.path.join("assets", "images", "ghost_frightened.png")
+
+        if state is GhostState.RETURN_HOME:
+            return None
+
+        ghost_val = self.ghost.ghost_type.value
+        return (
+            self.ghost_sprite_asset
+            if self.ghost_sprite_asset
+            else f"assets/images/ghost_{ghost_val}.png"
+        )
+
     def _get_ghost_image(self) -> Any:
         """Load and return the appropriate ghost sprite."""
         try:
@@ -79,89 +97,67 @@ class GhostRenderer(Renderer):
                 return None
 
             state = getattr(self.ghost, "state", GhostState.CHASE)
-            if state is GhostState.FLEE:
-                path = os.path.join("assets", "images", "ghost_frightened.png")
-                if not os.path.exists(path):
-                    path = os.path.join(
-                        "assets", "images", "ghosts", "blue_ghost.png"
-                    )
-            elif state is GhostState.RETURN_HOME:
-                return None  # Will draw eyes procedurally
-            else:
-                ghost_val = self.ghost.ghost_type.value
-                path = (
-                    self.ghost_sprite_asset
-                    if self.ghost_sprite_asset
-                    else f"assets/images/ghost_{ghost_val}.png"
-                )
+            path = self._resolve_ghost_sprite_path(state)
+            if path is None:
+                return None
 
             sprite_size = max(16, round(self.cell_size * 28.0 / 36.0))
             cache_key = (path, sprite_size)
             if cache_key in self._sprite_cache:
                 return self._sprite_cache[cache_key]
 
-            img = pygame.image.load(path).convert_alpha()
-            scaled = pygame.transform.scale(
-                img, (sprite_size, sprite_size)
-            )
+            raw_img = pygame.image.load(path)
+            if pygame.display.get_surface() is not None:
+                img = raw_img.convert_alpha()
+            else:
+                img = raw_img
+            try:
+                scaled = pygame.transform.smoothscale(
+                    img, (sprite_size, sprite_size)
+                )
+            except Exception:
+                scaled = pygame.transform.scale(
+                    img, (sprite_size, sprite_size)
+                )
             self._sprite_cache[cache_key] = scaled
             return scaled
         except Exception:
             return None
 
-    def _render_to_surface(self) -> None:
-        """Draw Ghost to the destination Pygame surface."""
-        if self.surface is None or self.ghost is None:
-            return
+    def _render_home_eyes(
+        self, center_x: int, center_y: int, radius: int
+    ) -> None:
+        """Draw returning ghost eyes."""
+        eye_offset = max(2, self.cell_size // 8)
+        pygame.draw.circle(
+            self.surface, (255, 255, 255),
+            (center_x - eye_offset, center_y - eye_offset),
+            max(2, radius // 2)
+        )
+        pygame.draw.circle(
+            self.surface, (255, 255, 255),
+            (center_x + eye_offset, center_y - eye_offset),
+            max(2, radius // 2)
+        )
+        pygame.draw.circle(
+            self.surface, (0, 0, 180),
+            (center_x - eye_offset + 1, center_y - eye_offset),
+            max(1, radius // 4)
+        )
+        pygame.draw.circle(
+            self.surface, (0, 0, 180),
+            (center_x + eye_offset + 1, center_y - eye_offset),
+            max(1, radius // 4)
+        )
 
-        if hasattr(self.ghost, "get_visual_position"):
-            vx, vy = self.ghost.get_visual_position()
-        else:
-            vx = float(self.ghost.position[0])
-            vy = float(self.ghost.position[1])
-
-        sprite_size = max(16, round(self.cell_size * 28.0 / 36.0))
-        margin = (self.cell_size - sprite_size) // 2
-        px = self.offset_x + round(vx * self.cell_size) + margin
-        py = self.offset_y + round(vy * self.cell_size) + margin
-
-        state = getattr(self.ghost, "state", GhostState.CHASE)
-        if state is not GhostState.RETURN_HOME:
-            sprite = self._get_ghost_image()
-            if sprite is not None:
-                self.surface.blit(sprite, (px, py))
-                return
-
-        # Procedural fallback (or eyes for RETURN_HOME)
-        center_x = px + self.cell_size // 2
-        center_y = py + self.cell_size // 2
-        radius = max(3, self.cell_size // 2 - 2)
-
-        if state is GhostState.RETURN_HOME:
-            # Draw only eyes
-            eye_offset = max(2, self.cell_size // 8)
-            pygame.draw.circle(
-                self.surface, (255, 255, 255),
-                (center_x - eye_offset, center_y - eye_offset),
-                max(2, radius // 2)
-            )
-            pygame.draw.circle(
-                self.surface, (255, 255, 255),
-                (center_x + eye_offset, center_y - eye_offset),
-                max(2, radius // 2)
-            )
-            pygame.draw.circle(
-                self.surface, (0, 0, 180),
-                (center_x - eye_offset + 1, center_y - eye_offset),
-                max(1, radius // 4)
-            )
-            pygame.draw.circle(
-                self.surface, (0, 0, 180),
-                (center_x + eye_offset + 1, center_y - eye_offset),
-                max(1, radius // 4)
-            )
-            return
-
+    def _render_fallback_body(
+        self,
+        center_x: int,
+        center_y: int,
+        radius: int,
+        state: GhostState,
+    ) -> None:
+        """Draw procedural ghost body and eyes when sprite is unavailable."""
         color_map = {
             "red": (255, 0, 0),
             "pink": (255, 184, 255),
@@ -170,7 +166,7 @@ class GhostRenderer(Renderer):
         }
         type_name = getattr(
             self.ghost.ghost_type, "value", str(self.ghost.ghost_type)
-        ).lower()
+        ).lower() if self.ghost else "red"
         color = color_map.get(type_name, (255, 0, 0))
 
         if state is GhostState.FLEE:
@@ -202,6 +198,38 @@ class GhostRenderer(Renderer):
             self.surface, (0, 0, 180),
             (center_x + eye_dx + 1, center_y - 3), 1
         )
+
+    def _render_to_surface(self) -> None:
+        """Draw Ghost to the destination Pygame surface."""
+        if self.surface is None or self.ghost is None:
+            return
+
+        if hasattr(self.ghost, "get_visual_position"):
+            vx, vy = self.ghost.get_visual_position()
+        else:
+            vx = float(self.ghost.position[0])
+            vy = float(self.ghost.position[1])
+
+        sprite_size = max(16, round(self.cell_size * 28.0 / 36.0))
+        margin = (self.cell_size - sprite_size) // 2
+        px = self.offset_x + round(vx * self.cell_size) + margin
+        py = self.offset_y + round(vy * self.cell_size) + margin
+
+        state = getattr(self.ghost, "state", GhostState.CHASE)
+        if state is not GhostState.RETURN_HOME:
+            sprite = self._get_ghost_image()
+            if sprite is not None:
+                self.surface.blit(sprite, (px, py))
+                return
+
+        center_x = px + self.cell_size // 2
+        center_y = py + self.cell_size // 2
+        radius = max(3, self.cell_size // 2 - 2)
+
+        if state is GhostState.RETURN_HOME:
+            self._render_home_eyes(center_x, center_y, radius)
+        else:
+            self._render_fallback_body(center_x, center_y, radius, state)
 
     def shutdown(self) -> None:
         """Shut down the ghost renderer."""

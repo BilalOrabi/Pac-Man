@@ -6,7 +6,7 @@ from src.config.game_config import GameConfig, LevelConfig
 from src.entities.ghost import Ghost, GhostType
 from src.entities.player import Player
 from src.maze.adapter import MazeAdapter
-from src.maze.maze import Maze
+from src.maze.maze import Coordinate, Maze
 from src.world.level import Level
 
 
@@ -21,6 +21,45 @@ class LevelFactory:
         """Initialize the factory with maze and game configuration."""
         self.maze_adapter = maze_adapter
         self.game_configuration = game_configuration
+
+    @staticmethod
+    def _place_super_pacgums(maze: Maze) -> set[Coordinate]:
+        """Place super-pacgums in open corners of the maze."""
+        corners = {
+            (0, 0),
+            (maze.width - 1, 0),
+            (0, maze.height - 1),
+            (maze.width - 1, maze.height - 1),
+        }
+        return {
+            c for c in corners
+            if maze.is_inside(*c) and not maze.get_cell(c).is_solid_block
+        }
+
+    @staticmethod
+    def _distribute_pacgums(
+        maze: Maze,
+        player_pos: Coordinate,
+        super_pacgums: set[Coordinate],
+        pacgum_count: int,
+        maze_seed: int,
+    ) -> set[Coordinate]:
+        """Sample and distribute regular pacgums across open corridors."""
+        walkable = [
+            (x, y)
+            for y in range(maze.height)
+            for x in range(maze.width)
+            if not maze.get_cell((x, y)).is_solid_block
+            and (x, y) not in super_pacgums
+            and (x, y) != player_pos
+        ]
+        target_regular = max(0, pacgum_count - len(super_pacgums))
+        rng = random.Random(maze_seed)
+        if 0 < target_regular < len(walkable):
+            return set(rng.sample(walkable, target_regular))
+        if target_regular >= len(walkable):
+            return set(walkable)
+        return set()
 
     def create_level(
         self,
@@ -47,35 +86,12 @@ class LevelFactory:
         )
 
         player = self._create_player(maze)
-
         ghosts = self._create_ghosts(maze)
 
-        corners = {
-            (0, 0),
-            (maze.width - 1, 0),
-            (0, maze.height - 1),
-            (maze.width - 1, maze.height - 1),
-        }
-        super_pacgums = {
-            c for c in corners
-            if maze.is_inside(*c) and not maze.get_cell(c).is_solid_block
-        }
-        walkable = [
-            (x, y)
-            for y in range(maze.height)
-            for x in range(maze.width)
-            if not maze.get_cell((x, y)).is_solid_block
-            and (x, y) not in super_pacgums
-            and (x, y) != player.position
-        ]
-        target_regular = max(0, pacgum_count - len(super_pacgums))
-        rng = random.Random(maze_seed)
-        if 0 < target_regular < len(walkable):
-            pacgums = set(rng.sample(walkable, target_regular))
-        elif target_regular >= len(walkable):
-            pacgums = set(walkable)
-        else:
-            pacgums = set()
+        super_pacgums = self._place_super_pacgums(maze)
+        pacgums = self._distribute_pacgums(
+            maze, player.position, super_pacgums, pacgum_count, maze_seed
+        )
 
         total_pacgums = (
             len(pacgums) + len(super_pacgums)

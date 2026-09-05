@@ -71,6 +71,32 @@ class Maze:
         """Return whether the coordinates are inside the maze."""
         return 0 <= x < self.width and 0 <= y < self.height
 
+    @staticmethod
+    def _is_passage_open(
+        from_cell: MazeCell,
+        to_cell: MazeCell,
+        delta_x: int,
+        delta_y: int,
+    ) -> bool:
+        """Check whether walls block movement between adjacent cells."""
+        if delta_x == 1 and delta_y == 0:
+            return not (
+                from_cell.has_wall(Wall.EAST) or to_cell.has_wall(Wall.WEST)
+            )
+        if delta_x == -1 and delta_y == 0:
+            return not (
+                from_cell.has_wall(Wall.WEST) or to_cell.has_wall(Wall.EAST)
+            )
+        if delta_x == 0 and delta_y == 1:
+            return not (
+                from_cell.has_wall(Wall.SOUTH) or to_cell.has_wall(Wall.NORTH)
+            )
+        if delta_x == 0 and delta_y == -1:
+            return not (
+                from_cell.has_wall(Wall.NORTH) or to_cell.has_wall(Wall.SOUTH)
+            )
+        return True
+
     def can_move(
         self,
         from_position: Coordinate,
@@ -92,24 +118,7 @@ class Maze:
         delta_x = to_position[0] - from_position[0]
         delta_y = to_position[1] - from_position[1]
 
-        if delta_x == 1 and delta_y == 0:
-            east_blocked = from_cell.has_wall(Wall.EAST)
-            west_blocked = to_cell.has_wall(Wall.WEST)
-            return not (east_blocked or west_blocked)
-        if delta_x == -1 and delta_y == 0:
-            west_blocked = from_cell.has_wall(Wall.WEST)
-            east_blocked = to_cell.has_wall(Wall.EAST)
-            return not (west_blocked or east_blocked)
-        if delta_x == 0 and delta_y == 1:
-            south_blocked = from_cell.has_wall(Wall.SOUTH)
-            north_blocked = to_cell.has_wall(Wall.NORTH)
-            return not (south_blocked or north_blocked)
-        if delta_x == 0 and delta_y == -1:
-            north_blocked = from_cell.has_wall(Wall.NORTH)
-            south_blocked = to_cell.has_wall(Wall.SOUTH)
-            return not (north_blocked or south_blocked)
-
-        return True
+        return self._is_passage_open(from_cell, to_cell, delta_x, delta_y)
 
     def is_walkable(
         self,

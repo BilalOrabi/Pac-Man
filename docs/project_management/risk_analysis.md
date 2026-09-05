@@ -21,6 +21,9 @@ Risks were identified, evaluated, and mitigated based on two primary dimensions:
 | **R-06** | Quality | Mock incompatibility in test suite when enhancing real domain methods | 2 | 2 | **4** | Moderate |
 | **R-07** | Compliance | Non-compliance with 42 code style (flake8 line limits, untyped mypy signatures) | 2 | 2 | **4** | Moderate |
 | **R-08** | Packaging | Standalone bundle fails to package required assets and dependencies | 2 | 2 | **4** | Moderate |
+| **R-09** | Technical | Center spawn collision with '42' solid logo block at width 14 | 3 | 3 | **9** | Critical |
+| **R-10** | Presentation | Dynamic window resizing causes aspect ratio distortion and screen flicker | 2 | 2 | **4** | Moderate |
+| **R-11** | Compliance | Stderr stream pollution and external library notices violate silent console requirement | 2 | 2 | **4** | Moderate |
 
 ---
 
@@ -66,5 +69,26 @@ Risks were identified, evaluated, and mitigated based on two primary dimensions:
 - **Description**: Existing unit tests mock certain objects (`player.lives`, `game_renderer`), which could raise `TypeError` when tested against numeric operators (e.g., `lives <= 0`).
 - **Mitigation Strategy**:
   - Added safe type-checking guards (`isinstance(lives, (int, float))`) in state coordination checks.
-  - Maintained complete backward compatibility across all 480 test cases.
-- **Outcome**: **Mitigated**. 480/480 tests pass without failures.
+  - Maintained complete backward compatibility across all 525 test cases.
+- **Outcome**: **Mitigated**. 525/525 tests pass without failures.
+
+### R-09: Center Spawn Collision with '42' Solid Logo Blocks (Width 14)
+- **Description**: In mazes of width 14 and height $\ge 10$, the mandatory '42' logo places an impenetrable solid block directly at `(width // 2, height // 2) = (7, 5)`. Spawning Pac-Man here trapped the player and prevented DFS corridor carving, causing interior walls to vanish.
+- **Mitigation Strategy**:
+  - Implemented `_is_42_solid_cell` in `MazeAdapter` to map the logo pattern footprint.
+  - Implemented `_find_safe_entry` to automatically shift the spawn inward to the nearest open corridor cell `(6, 5)` between the '4' and '2'.
+- **Outcome**: **Mitigated**. Complete maze carving and walkable player spawns for all valid dimension combinations.
+
+### R-10: Display Resizing Jitter & Background Distortion
+- **Description**: Recalculating OS window dimensions per level based on maze cell counts caused menu artwork distortion, letterboxing, and window flickering between state changes.
+- **Mitigation Strategy**:
+  - Locked display permanently to native $1600 \times 900$ native widescreen resolution across all game states.
+  - MazeRenderer dynamically downscales cells (`cell_size = min((1500 // w), (780 // h), 36)`) and centers the maze arena inside the screen.
+- **Outcome**: **Mitigated**. Stable 60 FPS presentation with crisp anti-aliased scaling and zero window distortion.
+
+### R-11: Console Output Leaks & External Wheel Stderr Pollution
+- **Description**: External `mazegenerator` wheel notices ("too small to add '42'") and configuration validation warnings printed directly to `stdout`/`stderr`, violating clean silent terminal requirements.
+- **Mitigation Strategy**:
+  - Created centralized `ErrorLogger` and `ErrorLogStream` in `src/utils/error_logger.py`.
+  - Redirected `sys.stderr` and captured library stdout notices during maze generation, routing all entries exclusively to `errors.log` formatted with `[YYYY-MM-DD HH:MM:SS] <message>`.
+- **Outcome**: **Mitigated**. 100% silent console execution with full diagnostic traceability in root `errors.log`.

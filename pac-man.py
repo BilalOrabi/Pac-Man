@@ -1,5 +1,6 @@
 """Main entry point for the Pac-Man game."""
 
+import os
 import sys
 
 import pygame
@@ -31,8 +32,14 @@ from src.systems.power_mode import PowerModeSystem
 from src.systems.scoring import ScoringSystem
 from src.systems.timer_system import TimerSystem
 from src.theme.asset_manager import AssetManager
+from src.theme.assets import AssetPaths
+from src.utils.error_logger import ErrorLogger
 from src.world.game_world import GameWorld
+from src.world.level import Level
 from src.world.level_factory import LevelFactory
+
+WINDOW_WIDTH = 1600
+WINDOW_HEIGHT = 900
 
 
 def load_persistent_highscores(
@@ -76,6 +83,36 @@ def save_persistent_highscores(
         print(f"Warning: Could not save highscores: {exc}", file=sys.stderr)
 
 
+def _build_renderers(
+    asset_manager: AssetManager,
+    initial_level: Level,
+    highscore_mgr: HighscoreManager,
+) -> tuple[GameRenderer, UIRenderer]:
+    """Construct and configure all graphics renderers."""
+    maze_renderer = MazeRenderer(asset_manager=asset_manager)
+    player_renderer = PlayerRenderer(asset_manager=asset_manager)
+    ghost_renderers = [
+        GhostRenderer(asset_manager=asset_manager)
+        for _ in range(len(initial_level.ghosts))
+    ]
+    ui_renderer = UIRenderer(asset_manager=asset_manager)
+    ui_renderer.game_state_name = "MENU"
+    ui_renderer.highscores = [
+        {"name": e.player_name, "score": e.score}
+        for e in highscore_mgr.entries
+    ]
+
+    game_renderer = GameRenderer(
+        maze_renderer=maze_renderer,
+        player_renderer=player_renderer,
+        ghost_renderers=ghost_renderers,
+        ui_renderer=ui_renderer,
+    )
+    game_renderer.initialize()
+    game_renderer.set_level(initial_level)
+    return game_renderer, ui_renderer
+
+
 def build_game_systems(
     config: GameConfig,
 ) -> tuple[
@@ -91,7 +128,13 @@ def build_game_systems(
     persistence = PersistenceManager("highscores.json")
     highscore_mgr = load_persistent_highscores(persistence)
 
-    asset_manager = AssetManager()
+    bg_asset = (
+        "assets/images/background.jpg"
+        if os.path.exists("assets/images/background.jpg")
+        else "assets/images/background.png"
+    )
+    asset_paths = AssetPaths(background=bg_asset)
+    asset_manager = AssetManager(assets=asset_paths)
     asset_manager.initialize()
 
     maze_adapter = MazeAdapter()
@@ -143,26 +186,9 @@ def build_game_systems(
         cheat_system=cheat_system,
     )
 
-    maze_renderer = MazeRenderer(asset_manager=asset_manager)
-    player_renderer = PlayerRenderer(asset_manager=asset_manager)
-    ghost_renderers = [
-        GhostRenderer(asset_manager=asset_manager)
-        for _ in range(len(initial_level.ghosts))
-    ]
-    ui_renderer = UIRenderer(asset_manager=asset_manager)
-    ui_renderer.highscores = [
-        {"name": e.player_name, "score": e.score}
-        for e in highscore_mgr.entries
-    ]
-
-    game_renderer = GameRenderer(
-        maze_renderer=maze_renderer,
-        player_renderer=player_renderer,
-        ghost_renderers=ghost_renderers,
-        ui_renderer=ui_renderer,
+    game_renderer, ui_renderer = _build_renderers(
+        asset_manager, initial_level, highscore_mgr
     )
-    game_renderer.initialize()
-    game_renderer.set_level(initial_level)
 
     state_machine = GameStateMachine()
     input_system = InputSystem()
@@ -190,6 +216,115 @@ def build_game_systems(
     )
 
 
+def _handle_enter_name_key(
+    event: pygame.event.Event,
+    coordinator: GameCoordinator,
+    ui_renderer: UIRenderer,
+    highscore_mgr: HighscoreManager,
+    persistence: PersistenceManager,
+) -> None:
+    """Handle keyboard interaction in ENTER_NAME state."""
+    if event.key == pygame.K_RETURN:
+        name = ui_renderer.name_input.strip() or "PACMAN"
+        if HighscoreManager.validate_player_name(name):
+            highscore_mgr.add_score(name, ui_renderer.score)
+            save_persistent_highscores(persistence, highscore_mgr)
+            ui_renderer.highscores = [
+                {"name": e.player_name, "score": e.score}
+                for e in highscore_mgr.entries
+            ]
+        ui_renderer.name_input = ""
+        coordinator.state_machine.transition_to(GameStateType.MENU)
+    elif event.key == pygame.K_ESCAPE:
+        ui_renderer.name_input = ""
+        coordinator.state_machine.transition_to(GameStateType.MENU)
+    elif event.key == pygame.K_BACKSPACE:
+        ui_renderer.name_input = ui_renderer.name_input[:-1]
+    else:
+        char = event.unicode
+        if len(ui_renderer.name_input) < 10 and (
+            char.isalnum() or char == " "
+        ):
+            ui_renderer.name_input += char
+
+
+def _handle_menu_key(
+    event: pygame.event.Event,
+    coordinator: GameCoordinator,
+    main_loop: MainGameLoop,
+    ui_renderer: UIRenderer,
+) -> None:
+    """Handle keyboard interaction in MENU state."""
+    if ui_renderer.menu_view != "main":
+        if event.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
+            ui_renderer.menu_view = "main"
+        return
+
+    if event.key == pygame.K_UP:
+        ui_renderer.menu_selection = (ui_renderer.menu_selection - 1) % 4
+    elif event.key == pygame.K_DOWN:
+        ui_renderer.menu_selection = (ui_renderer.menu_selection + 1) % 4
+    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+        if ui_renderer.menu_selection == 0:
+            coordinator.start_game()
+        elif ui_renderer.menu_selection == 1:
+            ui_renderer.menu_view = "highscores"
+        elif ui_renderer.menu_selection == 2:
+            ui_renderer.menu_view = "instructions"
+        elif ui_renderer.menu_selection == 3:
+            main_loop.stop()
+    elif event.key == pygame.K_1:
+        coordinator.start_game()
+    elif event.key == pygame.K_2:
+        ui_renderer.menu_view = "highscores"
+    elif event.key == pygame.K_3:
+        ui_renderer.menu_view = "instructions"
+    elif event.key in (pygame.K_4, pygame.K_ESCAPE):
+        main_loop.stop()
+
+
+def _handle_playing_key(
+    event: pygame.event.Event,
+    coordinator: GameCoordinator,
+    main_loop: MainGameLoop,
+    cheat_system: CheatSystem,
+) -> None:
+    """Handle keyboard interaction in PLAYING state."""
+    if event.key == pygame.K_1:
+        cheat_system.toggle_invincibility()
+        return
+    if event.key == pygame.K_2:
+        cheat_system.toggle_ghost_freeze()
+        return
+    if event.key == pygame.K_3:
+        cheat_system.toggle_speed_boost()
+        return
+    if event.key == pygame.K_4:
+        level = coordinator.game_world.current_level
+        if level and level.player:
+            level.player.lives += 1
+        return
+    if event.key == pygame.K_5:
+        cheat_system.trigger_level_skip()
+        return
+
+    movement_map = {
+        pygame.K_UP: InputAction.MOVE_UP,
+        pygame.K_w: InputAction.MOVE_UP,
+        pygame.K_DOWN: InputAction.MOVE_DOWN,
+        pygame.K_s: InputAction.MOVE_DOWN,
+        pygame.K_LEFT: InputAction.MOVE_LEFT,
+        pygame.K_a: InputAction.MOVE_LEFT,
+        pygame.K_RIGHT: InputAction.MOVE_RIGHT,
+        pygame.K_d: InputAction.MOVE_RIGHT,
+        pygame.K_p: InputAction.PAUSE_GAME,
+        pygame.K_ESCAPE: InputAction.PAUSE_GAME,
+    }
+    action = movement_map.get(event.key)
+    if action is not None:
+        main_loop.process_action(action)
+
+
 def handle_key_events(
     event: pygame.event.Event,
     coordinator: GameCoordinator,
@@ -203,104 +338,37 @@ def handle_key_events(
     state = coordinator.state_machine.current_state
 
     if state is GameStateType.ENTER_NAME:
-        if event.key == pygame.K_RETURN:
-            name = ui_renderer.name_input.strip() or "PACMAN"
-            if HighscoreManager.validate_player_name(name):
-                highscore_mgr.add_score(name, ui_renderer.score)
-                save_persistent_highscores(persistence, highscore_mgr)
-                ui_renderer.highscores = [
-                    {"name": e.player_name, "score": e.score}
-                    for e in highscore_mgr.entries
-                ]
-            ui_renderer.name_input = ""
-            coordinator.state_machine.transition_to(GameStateType.MENU)
-        elif event.key == pygame.K_ESCAPE:
-            ui_renderer.name_input = ""
-            coordinator.state_machine.transition_to(GameStateType.MENU)
-        elif event.key == pygame.K_BACKSPACE:
-            ui_renderer.name_input = ui_renderer.name_input[:-1]
-        else:
-            char = event.unicode
-            if len(ui_renderer.name_input) < 10 and (
-                char.isalnum() or char == " "
-            ):
-                ui_renderer.name_input += char.upper()
-        return
-
-    if state is GameStateType.MENU:
-        if ui_renderer.menu_view != "main":
-            if event.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
-                ui_renderer.menu_view = "main"
-            return
-
-        if event.key == pygame.K_UP:
-            ui_renderer.menu_selection = (ui_renderer.menu_selection - 1) % 4
-        elif event.key == pygame.K_DOWN:
-            ui_renderer.menu_selection = (ui_renderer.menu_selection + 1) % 4
-        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-            if ui_renderer.menu_selection == 0:
-                coordinator.start_game()
-            elif ui_renderer.menu_selection == 1:
-                ui_renderer.menu_view = "highscores"
-            elif ui_renderer.menu_selection == 2:
-                ui_renderer.menu_view = "instructions"
-            elif ui_renderer.menu_selection == 3:
-                main_loop.stop()
-        elif event.key == pygame.K_1:
-            coordinator.start_game()
-        elif event.key == pygame.K_2:
-            ui_renderer.menu_view = "highscores"
-        elif event.key == pygame.K_3:
-            ui_renderer.menu_view = "instructions"
-        elif event.key in (pygame.K_4, pygame.K_ESCAPE):
-            main_loop.stop()
-        return
-
-    if state is GameStateType.PLAYING:
-        # Cheat hotkeys
-        if event.key == pygame.K_1:
-            cheat_system.toggle_invincibility()
-            return
-        if event.key == pygame.K_2:
-            cheat_system.toggle_ghost_freeze()
-            return
-        if event.key == pygame.K_3:
-            cheat_system.toggle_speed_boost()
-            return
-        if event.key == pygame.K_4:
-            level = coordinator.game_world.current_level
-            if level and level.player:
-                level.player.lives += 1
-            return
-        if event.key == pygame.K_5:
-            cheat_system.trigger_level_skip()
-            return
-
-        # Movement
-        if event.key in (pygame.K_UP, pygame.K_w):
-            main_loop.process_action(InputAction.MOVE_UP)
-        elif event.key in (pygame.K_DOWN, pygame.K_s):
-            main_loop.process_action(InputAction.MOVE_DOWN)
-        elif event.key in (pygame.K_LEFT, pygame.K_a):
-            main_loop.process_action(InputAction.MOVE_LEFT)
-        elif event.key in (pygame.K_RIGHT, pygame.K_d):
-            main_loop.process_action(InputAction.MOVE_RIGHT)
-        elif event.key in (pygame.K_p, pygame.K_ESCAPE):
-            main_loop.process_action(InputAction.PAUSE_GAME)
-        return
-
-    if state is GameStateType.PAUSED:
+        _handle_enter_name_key(
+            event, coordinator, ui_renderer, highscore_mgr, persistence
+        )
+    elif state is GameStateType.MENU:
+        _handle_menu_key(event, coordinator, main_loop, ui_renderer)
+    elif state is GameStateType.PLAYING:
+        _handle_playing_key(event, coordinator, main_loop, cheat_system)
+    elif state is GameStateType.PAUSED:
         if event.key in (pygame.K_p, pygame.K_ESCAPE):
             main_loop.process_action(InputAction.PAUSE_GAME)
         elif event.key == pygame.K_m:
             main_loop.process_action(InputAction.RETURN_TO_MENU)
-        return
-
-    if state in (GameStateType.GAME_OVER, GameStateType.VICTORY):
+    elif state in (GameStateType.GAME_OVER, GameStateType.VICTORY):
         if event.key in (pygame.K_RETURN, pygame.K_SPACE):
             main_loop.process_action(InputAction.START_GAME)
         elif event.key == pygame.K_ESCAPE:
             main_loop.process_action(InputAction.RETURN_TO_MENU)
+
+
+def _collect_active_cheats(cheat_system: CheatSystem) -> list[str]:
+    """Collect active cheat mode display tags."""
+    active: list[str] = []
+    if cheat_system.is_invincible:
+        active.append("INVINCIBLE")
+    if cheat_system.is_ghosts_frozen:
+        active.append("FROZEN")
+    if cheat_system.is_speed_boosted:
+        active.append("SPEED")
+    if cheat_system.is_power_mode_enabled:
+        active.append("POWER")
+    return active
 
 
 def sync_ui(
@@ -321,16 +389,13 @@ def sync_ui(
         rem = max(0.0, config.level_max_time - level.elapsed_level_time)
         ui_renderer.time_remaining = rem
 
-    active: list[str] = []
-    if cheat_system.is_invincible:
-        active.append("INVINCIBLE")
-    if cheat_system.is_ghosts_frozen:
-        active.append("FROZEN")
-    if cheat_system.is_speed_boosted:
-        active.append("SPEED")
-    if cheat_system.is_power_mode_enabled:
-        active.append("POWER")
-    ui_renderer.active_cheats = active
+    ui_renderer.active_cheats = _collect_active_cheats(cheat_system)
+
+    cur_state = coordinator.state_machine.current_state
+    if cur_state is GameStateType.VICTORY:
+        ui_renderer.last_outcome = "victory"
+    elif cur_state is GameStateType.GAME_OVER:
+        ui_renderer.last_outcome = "game_over"
 
 
 def run_game(config: GameConfig) -> None:
@@ -347,15 +412,9 @@ def run_game(config: GameConfig) -> None:
 
     pygame.init()
     pygame.font.init()
-    pygame.display.set_caption("42 School â€” Pac-Man")
+    pygame.display.set_caption("42 Pac-Man")
 
-    first_level = game_world.current_level
-    mw = first_level.maze.width if first_level else 19
-    mh = first_level.maze.height if first_level else 21
-    win_w = max(1200, mw * 36 + 100)
-    win_h = max(900, mh * 36 + 120)
-
-    screen = pygame.display.set_mode((win_w, win_h))
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     coordinator.game_renderer.set_surface(screen)
     clock = pygame.time.Clock()
 
@@ -390,6 +449,7 @@ def run_game(config: GameConfig) -> None:
 
 def main() -> None:
     """Start the Pac-Man application."""
+    ErrorLogger.install("errors.log")
     args: list[str] = sys.argv[1:]
 
     if len(args) != 1:
@@ -400,7 +460,7 @@ def main() -> None:
     config_path = args[0]
 
     try:
-        config = ConfigLoader.load(config_path)
+        config = ConfigLoader.load(config_path, fallback_to_defaults=True)
     except ConfigError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         sys.exit(1)

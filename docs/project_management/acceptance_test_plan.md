@@ -5,7 +5,7 @@
 The acceptance test plan verifies every functional, non-functional, and architectural requirement defined in **`Pacman.pdf`** (v1.5) and the project memory guidelines.
 
 Testing comprises three rigorous levels:
-1. **Automated Unit & Integration Testing**: 480 automated tests run via `pytest`.
+1. **Automated Unit & Integration Testing**: 525 automated tests run via `pytest`.
 2. **Static Code Analysis**: Strict compliance with `flake8` (0 warnings) and `mypy` (strict types).
 3. **Manual Functional Verification**: In-game interactive testing across all game states, levels, and cheats.
 
@@ -20,8 +20,9 @@ Testing comprises three rigorous levels:
 | **Ch. 5.2** | Comment Filtering (`#` and `//`) | `tests/config/test_config_loader.py` | Automated | **PASS** |
 | **Ch. 5.3** | Fault-Tolerance & Safe Clamping | `tests/config/test_config_loader.py` | Automated + Manual | **PASS** |
 | **Ch. 5.4** | Maze Generator Wheel Integration | `tests/maze/test_adapter.py` | Automated | **PASS** |
-| **Ch. 5.5** | High-Score Validation (10 chars, disk I/O) | `tests/highscore/`, `tests/persistence/` | Automated + Manual | **PASS** |
-| **Ch. 6.1** | Corridor Wall Collisions | `tests/systems/test_collision.py` | Automated + Manual | **PASS** |
+| **Ch. 5.4 (Add.)**| Safe Entry Resolution ('42' Logo Collisions) | `tests/maze/test_adapter.py` | Automated | **PASS** |
+| **Ch. 5.5** | High-Score Validation (Mixed-Case, 10 chars, disk I/O) | `tests/highscore/`, `tests/persistence/` | Automated + Manual | **PASS** |
+| **Ch. 6.1** | Corridor Wall Collisions & BFS Pathfinding | `tests/systems/test_collision.py`, `tests/ai/` | Automated + Manual | **PASS** |
 | **Ch. 6.2** | Player Movement (WASD / Arrows) | `tests/controllers/test_player_controller.py` | Automated + Manual | **PASS** |
 | **Ch. 6.3** | Ghost AI (Chase, Flee, Return Home) | `tests/ai/`, `tests/controllers/test_ghost_controller.py` | Automated + Manual | **PASS** |
 | **Ch. 6.4** | Pacgums & Super-Pacgums Consumption | `tests/world/test_level.py`, `tests/systems/test_scoring.py` | Automated + Manual | **PASS** |
@@ -29,6 +30,8 @@ Testing comprises three rigorous levels:
 | **Ch. 6.6** | Lives Deduction & Center Respawn | `tests/systems/test_lives.py` | Automated + Manual | **PASS** |
 | **Ch. 6.7** | Cheat Mode (Keys 1-5) | `tests/cheat/test_cheat_system.py` | Automated + Manual | **PASS** |
 | **Ch. 6.8** | 60 FPS Presentation, HUD & Menus | `tests/rendering/`, `pac-man.py` | Automated + Manual | **PASS** |
+| **Ch. 6.8 (Add.)**| Native Fixed 1600x900 Display & Centering | `tests/rendering/`, `pac-man.py` | Automated + Manual | **PASS** |
+| **Quality (Add.)**| Centralized Silent Logging (`errors.log`) | `tests/utils/test_error_logger.py` | Automated + Manual | **PASS** |
 | **Ch. 7** | Packaging for itch.io / Steam | `package.py`, `pacman.spec` | Automated + Manual | **PASS** |
 | **Ch. 8** | Project Management Artifacts | `docs/project_management/` | Manual Audit | **PASS** |
 | **Ch. 9** | Comprehensive README Documentation | `README.md` | Manual Audit | **PASS** |
@@ -93,3 +96,7 @@ Testing comprises three rigorous levels:
 | **BUG-05** | `gameplay_controller.py` | High | Player-ghost collisions had no gameplay effect. | Wired collision response: ghost eaten in power mode, or player loses life and respawns. |
 | **BUG-06** | `ui_renderer.py` | High | UI renderer lacked graphical implementation for menus and HUD. | Implemented Pygame drawing for HUD, Main Menu, Highscores, Instructions, Pause, Game Over, and Name Entry. |
 | **BUG-07** | `pac-man.py` | Critical | Main executable printed config summary and immediately exited. | Built full 60 FPS Pygame loop with input event polling, state synchronization, and clean persistence shutdown. |
+| **BUG-08** | `adapter.py` | Critical | Center spawn at width 14 landed on solid block of '42' pattern, trapping player and deleting interior walls. | Added `_find_safe_entry()` to resolve spawn to nearest open corridor cell `(6, 5)` between digits. |
+| **BUG-09** | `pac-man.py` | Medium | Highscore name input rejected lowercase characters. | Allowed mixed-case letters `a-z`, `A-Z`, numbers, and spaces up to 10 characters. |
+| **BUG-10** | `error_logger.py` | Medium | External wheel notices and config warnings printed to console terminal. | Created centralized `ErrorLogger` capturing stderr and wheel notices into `errors.log`. |
+| **BUG-11** | `pac-man.py` | Medium | Dynamic window resizing caused artwork distortion, letterboxing, and screen flickering. | Fixed display permanently to $1600 \times 900$, centering auto-scaled mazes via `GameRenderer`. |

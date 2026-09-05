@@ -184,3 +184,107 @@ def test_shutdown_resets_renderer() -> None:
     assert renderer.is_initialized is False
     assert renderer.menu_font_asset is None
     assert renderer.game_font_asset is None
+    assert renderer.background_asset is None
+
+
+def test_initialize_loads_background_asset() -> None:
+    """Initialization should fetch background asset from asset manager."""
+    asset_manager = Mock(spec=AssetManager)
+    asset_manager.is_initialized = True
+    asset_manager.get_font.return_value = "assets/fonts/menu.ttf"
+    asset_manager.get_background.return_value = "assets/images/background.jpg"
+
+    renderer = UIRenderer(asset_manager=asset_manager)
+    renderer.initialize()
+
+    assert renderer.background_asset == "assets/images/background.jpg"
+    asset_manager.get_background.assert_called_once()
+
+
+def test_render_menu_uses_background_on_surface() -> None:
+    """Rendering in MENU state should blit background or fallback."""
+    import pygame
+    pygame.init()
+    surf = pygame.Surface((1600, 900))
+
+    renderer = create_renderer()
+    renderer.initialize()
+    renderer.surface = surf
+    renderer.game_state_name = "MENU"
+
+    renderer.render()
+    assert renderer.surface.get_width() == 1600
+    assert renderer.surface.get_height() == 900
+
+
+def test_render_game_over_uses_background_on_surface() -> None:
+    """Rendering in GAME_OVER state should render background and card."""
+    import pygame
+    pygame.init()
+    surf = pygame.Surface((1600, 900))
+
+    renderer = create_renderer()
+    renderer.initialize()
+    renderer.surface = surf
+    renderer.game_state_name = "GAME_OVER"
+    renderer.set_score(2450)
+    renderer.set_level_number(3)
+
+    renderer.render()
+    assert renderer.surface.get_width() == 1600
+    assert renderer.surface.get_height() == 900
+
+
+def test_render_victory_uses_background_on_surface() -> None:
+    """Rendering in VICTORY state should render background and card."""
+    import pygame
+    pygame.init()
+    surf = pygame.Surface((1600, 900))
+
+    renderer = create_renderer()
+    renderer.initialize()
+    renderer.surface = surf
+    renderer.game_state_name = "VICTORY"
+    renderer.set_score(5000)
+
+    renderer.render()
+    assert renderer.surface.get_width() == 1600
+    assert renderer.surface.get_height() == 900
+
+
+def test_render_enter_name_with_victory_outcome() -> None:
+    """Rendering ENTER_NAME after victory should use victory backdrop."""
+    import pygame
+    pygame.init()
+    surf = pygame.Surface((1600, 900))
+
+    renderer = create_renderer()
+    renderer.initialize()
+    renderer.surface = surf
+    renderer.game_state_name = "ENTER_NAME"
+    renderer.last_outcome = "victory"
+    renderer.set_score(15000)
+    renderer.name_input = "CHAMP"
+
+    renderer.render()
+    assert renderer.surface.get_width() == 1600
+    assert renderer.surface.get_height() == 900
+
+
+def test_render_enter_name_with_game_over_outcome() -> None:
+    """Rendering ENTER_NAME after game over should use game over backdrop."""
+    import pygame
+    pygame.init()
+    surf = pygame.Surface((1600, 900))
+
+    renderer = create_renderer()
+    renderer.initialize()
+    renderer.surface = surf
+    renderer.game_state_name = "ENTER_NAME"
+    renderer.last_outcome = "game_over"
+    renderer.set_score(4200)
+    renderer.name_input = "HERO"
+
+    renderer.render()
+    assert renderer.surface.get_width() == 1600
+    assert renderer.surface.get_height() == 900

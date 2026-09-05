@@ -36,6 +36,81 @@ class FleeBehavior:
         return distance_map
 
     @staticmethod
+    def _get_opposite_direction(direction: Direction) -> Direction:
+        """Return the opposite direction for a given movement direction."""
+        opposites = {
+            Direction.UP: Direction.DOWN,
+            Direction.DOWN: Direction.UP,
+            Direction.LEFT: Direction.RIGHT,
+            Direction.RIGHT: Direction.LEFT,
+        }
+        return opposites.get(direction, Direction.NONE)
+
+    @staticmethod
+    def _collect_candidates(
+        maze: Maze,
+        ghost_pos: Coordinate,
+        target_pos: Coordinate,
+        distance_map: dict[Coordinate, int],
+    ) -> list[tuple[Direction, float]]:
+        """Collect all walkable neighbor directions and target distances."""
+        candidates: list[tuple[Direction, float]] = []
+        for direction, (dx, dy) in FleeBehavior.POSSIBLE_DIRECTIONS:
+            cand = (ghost_pos[0] + dx, ghost_pos[1] + dy)
+            if not maze.is_walkable(cand, from_position=ghost_pos):
+                continue
+
+            if cand in distance_map:
+                dist = float(distance_map[cand])
+            else:
+                dist = float(
+                    abs(cand[0] - target_pos[0]) + abs(cand[1] - target_pos[1])
+                )
+            candidates.append((direction, dist))
+        return candidates
+
+    @staticmethod
+    def _select_best_flee_direction(
+        candidates: list[tuple[Direction, float]],
+        forbidden: Direction,
+        current_dist: float,
+    ) -> Direction:
+        """Choose safest direction preferring moves that maintain distance."""
+        fleeing: list[tuple[Direction, float]] = []
+        approaching: list[tuple[Direction, float]] = []
+        reverse_candidate: tuple[Direction, float] | None = None
+
+        for direction, dist in candidates:
+            if forbidden is not Direction.NONE and direction == forbidden:
+                reverse_candidate = (direction, dist)
+                continue
+            if dist >= current_dist:
+                fleeing.append((direction, dist))
+            else:
+                approaching.append((direction, dist))
+
+        # Priority 1: Move away or maintain distance without reversing
+        if fleeing:
+            return max(fleeing, key=lambda item: item[1])[0]
+
+        # Priority 2: Reverse if it leads away from danger
+        if (
+            reverse_candidate is not None
+            and reverse_candidate[1] > current_dist
+        ):
+            return reverse_candidate[0]
+
+        # Priority 3: If cornered, take farthest non-forbidden option
+        if approaching:
+            return max(approaching, key=lambda item: item[1])[0]
+
+        # Fallback: reverse if only walkable option
+        if reverse_candidate is not None:
+            return reverse_candidate[0]
+
+        return Direction.NONE
+
+    @staticmethod
     def get_direction_away_from_target(
         maze: Maze,
         ghost_position: Coordinate,
@@ -44,21 +119,13 @@ class FleeBehavior:
     ) -> Direction:
         """Return the walkable direction farthest from the target."""
         if not maze.is_inside(*ghost_position):
-            raise ValueError(
-                "Ghost position must be inside the maze."
-            )
+            raise ValueError("Ghost position must be inside the maze.")
 
-        opposites = {
-            Direction.UP: Direction.DOWN,
-            Direction.DOWN: Direction.UP,
-            Direction.LEFT: Direction.RIGHT,
-            Direction.RIGHT: Direction.LEFT,
-        }
-        forbidden = opposites.get(current_direction, Direction.NONE)
-
+        forbidden = FleeBehavior._get_opposite_direction(current_direction)
         distance_map = FleeBehavior._compute_distance_map(
             maze, target_position
         )
+
         if ghost_position in distance_map:
             current_dist = float(distance_map[ghost_position])
         else:
@@ -67,75 +134,12 @@ class FleeBehavior:
                 + abs(ghost_position[1] - target_position[1])
             )
 
-        candidates: list[tuple[Direction, float]] = []
-        for direction, (horizontal_change, vertical_change) in (
-            FleeBehavior.POSSIBLE_DIRECTIONS
-        ):
-            candidate_position = (
-                ghost_position[0] + horizontal_change,
-                ghost_position[1] + vertical_change,
-            )
-
-            if not maze.is_walkable(
-                candidate_position,
-                from_position=ghost_position,
-            ):
-                continue
-
-            if candidate_position in distance_map:
-                dist = float(distance_map[candidate_position])
-            else:
-                dist = float(
-                    abs(candidate_position[0] - target_position[0])
-                    + abs(candidate_position[1] - target_position[1])
-                )
-            candidates.append((direction, dist))
-
+        candidates = FleeBehavior._collect_candidates(
+            maze, ghost_position, target_position, distance_map
+        )
         if not candidates:
             return Direction.NONE
 
-        fleeing_non_forbidden: list[tuple[Direction, float]] = []
-        approaching_non_forbidden: list[tuple[Direction, float]] = []
-        reverse_candidate: tuple[Direction, float] | None = None
-
-        for direction, dist in candidates:
-            if forbidden is not Direction.NONE and direction == forbidden:
-                reverse_candidate = (direction, dist)
-                continue
-            if dist >= current_dist:
-                fleeing_non_forbidden.append((direction, dist))
-            else:
-                approaching_non_forbidden.append((direction, dist))
-
-        # Priority 1: Move away or maintain distance without reversing
-        if fleeing_non_forbidden:
-            best_dir = Direction.NONE
-            greatest_distance = float("-inf")
-            for d, dist in fleeing_non_forbidden:
-                if dist > greatest_distance:
-                    greatest_distance = dist
-                    best_dir = d
-            return best_dir
-
-        # Priority 2: If no forward/side path moves away, reverse to flee
-        if (
-            reverse_candidate is not None
-            and reverse_candidate[1] > current_dist
-        ):
-            return reverse_candidate[0]
-
-        # Priority 3: If cornered, take the best non-forbidden option
-        if approaching_non_forbidden:
-            best_dir = Direction.NONE
-            greatest_distance = float("-inf")
-            for d, dist in approaching_non_forbidden:
-                if dist > greatest_distance:
-                    greatest_distance = dist
-                    best_dir = d
-            return best_dir
-
-        # Fallback: reverse if it was the only walkable direction
-        if reverse_candidate is not None:
-            return reverse_candidate[0]
-
-        return Direction.NONE
+        return FleeBehavior._select_best_flee_direction(
+            candidates, forbidden, current_dist
+        )

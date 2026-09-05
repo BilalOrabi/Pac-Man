@@ -7,7 +7,7 @@ The project progress was continuously tracked across eight evaluation dimensions
 | Evaluation Dimension | Weight | Initial State | Final State | Weighted Contribution |
 | :--- | :---: | :---: | :---: | :---: |
 | **Architectural Foundation & Clean Code** (OOP, Flake8, Mypy, typing, PEP 257) | 20% | 85% | 100% | 20.0% |
-| **Unit & Integration Test Suite** (480 passing tests across all modules) | 15% | 80% | 100% | 15.0% |
+| **Unit & Integration Test Suite** (525 passing tests across all modules) | 15% | 80% | 100% | 15.0% |
 | **Gameplay Systems & Rule Engine** (Corridor wall checks, pellets, ghost collisions) | 20% | 25% | 100% | 20.0% |
 | **Presentation & Graphical UI** (Pygame rendering, 60 FPS loop, HUD, menus) | 20% | 5% | 100% | 20.0% |
 | **Config, Fault Tolerance & Highscores** (Comments, safe defaults, disk I/O) | 10% | 45% | 100% | 10.0% |
@@ -54,10 +54,21 @@ xychart-beta
    - *Issue*: Chapter 7 requirement for platform deployment (itch.io / Steam).
    - *Resolution*: Authored `pacman.spec` and automated `package.py` release generator producing a clean directory and distributable ZIP archive with Windows and Unix launchers.
 
+6. **Phase 5 Pivot (Visual Polish, Silent Logging & Architecture Refactoring)**:
+   - *Issue*: Stderr console output leaked external wheel notices and config clamping warnings; window resizing caused visual distortion of background artwork; center spawn at width 14 locked inside solid '42' pattern; monolithic functions reduced readability; asset directory was bloated with raw 2MB PNG artifacts.
+   - *Resolution*:
+     1. Implemented centralized `ErrorLogger` routing all warnings/errors exclusively to `errors.log` (terminal stdout/stderr 100% silent).
+     2. Fixed native resolution permanently to $1600 \times 900$ with auto-centered proportional maze scaling.
+     3. Implemented safe center entry resolution `(6, 5)` avoiding '42' logo solid cell collisions.
+     4. Integrated custom Arabian Desert Theme (Shemagh Pac-Man 4-directional 3-frame animations, 42-capped ghosts, date/dallah pellets, desert night and palace victory illustrations) through `AssetManager`.
+     5. Pruned unused generator artifacts and duplicate asset folders, shrinking distribution zip to 1.49 MB.
+     6. Decomposed monolithic routines across all 17 directories into single-responsibility private helper methods while expanding test suite to 525 passing tests.
+   - *Outcome*: Fully verified, robust, clean, and polished production-ready codebase.
+
 ---
 
 ## 3. Scope Management & Deliverable Verification
 
 - All features defined in `Pacman.pdf` (Chapters 1–9) are implemented and verified.
-- Unit and integration tests expanded to **480 tests**, achieving complete pass status.
+- Unit and integration tests expanded to **525 tests**, achieving complete 100% pass status.
 - Zero `flake8` warnings and strict `mypy` typing verified across the entire repository.

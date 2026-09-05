@@ -17,21 +17,12 @@ class ReturnHomeBehavior:
     )
 
     @staticmethod
-    def get_direction_toward_home(
+    def _bfs_search_home(
         maze: Maze,
         ghost_position: Coordinate,
         home_position: Coordinate,
-    ) -> Direction:
-        """Return the walkable direction closest to the ghost's home."""
-        if not maze.is_inside(*ghost_position):
-            raise ValueError(
-                "Ghost position must be inside the maze."
-            )
-
-        if ghost_position == home_position:
-            return Direction.NONE
-
-        # Breadth-first search for the true shortest corridor path to home
+    ) -> Direction | None:
+        """Find the initial step along shortest corridor path using BFS."""
         queue: deque[tuple[Coordinate, Direction]] = deque()
         visited: set[Coordinate] = {ghost_position}
 
@@ -58,31 +49,51 @@ class ReturnHomeBehavior:
                     visited.add(nxt)
                     queue.append((nxt, first_dir))
 
-        # Greedy fallback if maze topology isolates home
+        return None
+
+    @staticmethod
+    def _greedy_fallback(
+        maze: Maze,
+        ghost_position: Coordinate,
+        home_position: Coordinate,
+    ) -> Direction:
+        """Greedy Manhattan direction fallback if home is unreachable."""
         best_direction = Direction.NONE
         shortest_distance = float("inf")
 
-        for direction, (horizontal_change, vertical_change) in (
-            ReturnHomeBehavior.POSSIBLE_DIRECTIONS
-        ):
-            candidate_position = (
-                ghost_position[0] + horizontal_change,
-                ghost_position[1] + vertical_change,
-            )
-
-            if not maze.is_walkable(
-                candidate_position,
-                from_position=ghost_position,
-            ):
+        for direction, (dx, dy) in ReturnHomeBehavior.POSSIBLE_DIRECTIONS:
+            cand = (ghost_position[0] + dx, ghost_position[1] + dy)
+            if not maze.is_walkable(cand, from_position=ghost_position):
                 continue
 
-            distance_to_home = (
-                abs(candidate_position[0] - home_position[0])
-                + abs(candidate_position[1] - home_position[1])
+            dist = abs(cand[0] - home_position[0]) + abs(
+                cand[1] - home_position[1]
             )
-
-            if distance_to_home < shortest_distance:
-                shortest_distance = distance_to_home
+            if dist < shortest_distance:
+                shortest_distance = dist
                 best_direction = direction
 
         return best_direction
+
+    @staticmethod
+    def get_direction_toward_home(
+        maze: Maze,
+        ghost_position: Coordinate,
+        home_position: Coordinate,
+    ) -> Direction:
+        """Return the walkable direction closest to the ghost's home."""
+        if not maze.is_inside(*ghost_position):
+            raise ValueError("Ghost position must be inside the maze.")
+
+        if ghost_position == home_position:
+            return Direction.NONE
+
+        bfs_direction = ReturnHomeBehavior._bfs_search_home(
+            maze, ghost_position, home_position
+        )
+        if bfs_direction is not None:
+            return bfs_direction
+
+        return ReturnHomeBehavior._greedy_fallback(
+            maze, ghost_position, home_position
+        )

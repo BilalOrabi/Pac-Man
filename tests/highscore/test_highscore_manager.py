@@ -180,3 +180,26 @@ def test_invalid_maximum_entries_is_rejected() -> None:
     """The leaderboard size must be positive."""
     with pytest.raises(ValueError):
         HighscoreManager(maximum_entries=0)
+
+
+def test_player_name_with_lowercase_letters_and_spaces() -> None:
+    """Player names can contain lowercase letters, digits, and spaces."""
+    assert HighscoreManager.validate_player_name("pac man 1") is True
+    assert HighscoreManager.validate_player_name("User 42") is True
+    assert HighscoreManager.validate_player_name("a") is True
+    assert HighscoreManager.validate_player_name("1234567890") is True
+
+    manager = HighscoreManager()
+    manager.add_score("pac man 1", 500)
+    assert manager.get_entries()[0].player_name == "pac man 1"
+
+
+def test_player_name_exceeding_ten_chars_is_rejected() -> None:
+    """Player names longer than 10 characters should be rejected."""
+    assert HighscoreManager.validate_player_name("12345678901") is False
+
+
+def test_player_name_with_special_characters_is_rejected() -> None:
+    """Player names with non-alphanumeric/non-space symbols are rejected."""
+    assert HighscoreManager.validate_player_name("pac-man!") is False
+    assert HighscoreManager.validate_player_name("user@42") is False

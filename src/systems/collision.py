@@ -48,14 +48,8 @@ class CollisionSystem:
         return True
 
     @staticmethod
-    def check_entity_collision(
-        entity_a: Entity,
-        entity_b: Entity,
-    ) -> bool:
-        """Return whether two entities collide."""
-        if entity_a.position == entity_b.position:
-            return True
-
+    def _check_visual_collision(entity_a: Entity, entity_b: Entity) -> bool:
+        """Check collision based on sub-tile interpolated positions."""
         pos_fn_a = getattr(entity_a, "get_visual_position", None)
         pos_fn_b = getattr(entity_b, "get_visual_position", None)
         if callable(pos_fn_a) and callable(pos_fn_b):
@@ -66,5 +60,15 @@ class CollisionSystem:
             dx = va[0] - vb[0]
             dy = va[1] - vb[1]
             return bool((dx * dx + dy * dy) < 0.36)
-
         return False
+
+    @staticmethod
+    def check_entity_collision(
+        entity_a: Entity,
+        entity_b: Entity,
+    ) -> bool:
+        """Return whether two entities collide."""
+        if entity_a.position == entity_b.position:
+            return True
+
+        return CollisionSystem._check_visual_collision(entity_a, entity_b)

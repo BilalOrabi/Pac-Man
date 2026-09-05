@@ -243,3 +243,67 @@ def test_chase_reverses_at_dead_end() -> None:
     )
 
     assert direction is Direction.LEFT
+
+
+def test_chase_navigates_corridor_around_wall() -> None:
+    """Chase should navigate open corridor bends to reach target."""
+    cells = [
+        [
+            MazeCell(position=(x, y), walls=Wall.NONE, is_solid_block=False)
+            for x in range(3)
+        ]
+        for y in range(3)
+    ]
+    # Wall between (0, 0) and (2, 0) at (1, 0)
+    cells[0][1] = MazeCell(
+        position=(1, 0), walls=Wall.ALL, is_solid_block=True
+    )
+
+    maze = Maze(
+        width=3,
+        height=3,
+        cells=tuple(tuple(row) for row in cells),
+        entry=(0, 0),
+        exit=(2, 0),
+        shortest_path="",
+    )
+
+    # From (0, 0), RIGHT is blocked by wall at (1, 0).
+    # BFS should navigate DOWN to (0, 1) to follow corridor around wall.
+    direction = ChaseBehavior.get_direction_toward_target(
+        maze=maze,
+        ghost_position=(0, 0),
+        target_position=(2, 0),
+    )
+    assert direction is Direction.DOWN
+
+
+def test_chase_resolves_solid_wall_target() -> None:
+    """Chase should navigate toward nearest walkable cell if target in wall."""
+    cells = [
+        [
+            MazeCell(position=(x, y), walls=Wall.NONE, is_solid_block=False)
+            for x in range(3)
+        ]
+        for y in range(3)
+    ]
+    # (1, 1) is a solid wall
+    cells[1][1] = MazeCell(
+        position=(1, 1), walls=Wall.ALL, is_solid_block=True
+    )
+
+    maze = Maze(
+        width=3,
+        height=3,
+        cells=tuple(tuple(row) for row in cells),
+        entry=(0, 0),
+        exit=(2, 2),
+        shortest_path="",
+    )
+
+    direction = ChaseBehavior.get_direction_toward_target(
+        maze=maze,
+        ghost_position=(0, 0),
+        target_position=(1, 1),
+    )
+    assert direction in (Direction.RIGHT, Direction.DOWN)

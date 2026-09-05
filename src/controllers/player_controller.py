@@ -20,6 +20,25 @@ class PlayerController:
 
     CORNERING_TOLERANCE: float = 0.35
 
+    def _reverse_movement(self, direction: Direction) -> None:
+        """Instantly reverse player direction, inverting movement progress."""
+        if (
+            self.player.target_position is not None
+            and self.player.target_position != self.player.position
+            and self.player.movement_progress > 0.0
+        ):
+            old_pos = self.player.position
+            self.player.position = self.player.target_position
+            self.player.target_position = old_pos
+            self.player.movement_progress = max(
+                0.0, min(1.0, 1.0 - self.player.movement_progress)
+            )
+        else:
+            self.player.target_position = None
+            self.player.movement_progress = 0.0
+        self.player.direction = direction
+        self.buffered_direction = None
+
     def handle_action(
         self, action: InputAction, maze: Maze | None = None
     ) -> None:
@@ -39,22 +58,7 @@ class PlayerController:
             self.player.direction is not Direction.NONE
             and opposites.get(self.player.direction) == direction
         ):
-            if (
-                self.player.target_position is not None
-                and self.player.target_position != self.player.position
-                and self.player.movement_progress > 0.0
-            ):
-                old_pos = self.player.position
-                self.player.position = self.player.target_position
-                self.player.target_position = old_pos
-                self.player.movement_progress = max(
-                    0.0, min(1.0, 1.0 - self.player.movement_progress)
-                )
-            else:
-                self.player.target_position = None
-                self.player.movement_progress = 0.0
-            self.player.direction = direction
-            self.buffered_direction = None
+            self._reverse_movement(direction)
             return
 
         if self.player.direction is Direction.NONE:
@@ -62,6 +66,13 @@ class PlayerController:
             self.buffered_direction = None
         else:
             self.buffered_direction = direction
+
+    def _apply_buffered_direction(self, maze: Maze) -> None:
+        """Apply buffered turn direction if corridor is open."""
+        if self.buffered_direction is not None:
+            if self._can_move_in_direction(self.buffered_direction, maze):
+                self.player.direction = self.buffered_direction
+                self.buffered_direction = None
 
     def update(self, maze: Maze) -> None:
         """Calculate and apply the player's next valid position."""
@@ -76,10 +87,7 @@ class PlayerController:
             maze,
         )
 
-        if self.buffered_direction is not None:
-            if self._can_move_in_direction(self.buffered_direction, maze):
-                self.player.direction = self.buffered_direction
-                self.buffered_direction = None
+        self._apply_buffered_direction(maze)
 
         self.player.target_position = None
         self.player.movement_progress = 0.0

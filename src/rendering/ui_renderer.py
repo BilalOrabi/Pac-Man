@@ -1,5 +1,6 @@
 """Renderer responsible for Pac-Man user-interface information."""
 
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,6 +22,7 @@ class UIRenderer(Renderer):
     message: str = ""
     menu_font_asset: str | None = None
     game_font_asset: str | None = None
+    background_asset: str | None = None
     surface: Any = None
     game_state_name: str = "PLAYING"
     time_remaining: float = 0.0
@@ -29,6 +31,10 @@ class UIRenderer(Renderer):
     highscores: list[dict[str, Any]] = field(default_factory=list)
     menu_selection: int = 0
     menu_view: str = "main"
+    last_outcome: str = "game_over"
+    _bg_cache: dict[tuple[str, int, int], pygame.Surface] = field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def initialize(self) -> None:
         """Initialize the user-interface renderer."""
@@ -37,6 +43,10 @@ class UIRenderer(Renderer):
 
         self.menu_font_asset = self.asset_manager.get_font("menu")
         self.game_font_asset = self.asset_manager.get_font("game")
+        if hasattr(self.asset_manager, "get_background"):
+            bg = self.asset_manager.get_background()
+            if isinstance(bg, str):
+                self.background_asset = bg
 
         self.is_initialized = True
 
@@ -160,20 +170,173 @@ class UIRenderer(Renderer):
             msg_surf = font.render(self.message, True, (255, 220, 100))
             self.surface.blit(msg_surf, (20, surf_h - 28))
 
+    def _load_scaled_image(
+        self, file_path: str, width: int, height: int
+    ) -> pygame.Surface | None:
+        """Load and cache a scaled image by file path with fallback."""
+        try:
+            target_path = file_path
+            if not os.path.exists(target_path):
+                if target_path.endswith(".png"):
+                    alt_path = target_path[:-4] + ".jpg"
+                    if os.path.exists(alt_path):
+                        target_path = alt_path
+                elif target_path.endswith(".jpg"):
+                    alt_path = target_path[:-4] + ".png"
+                    if os.path.exists(alt_path):
+                        target_path = alt_path
+
+            if not os.path.exists(target_path):
+                return None
+
+            cache_key = (target_path, width, height)
+            if hasattr(self, "_bg_cache") and cache_key in self._bg_cache:
+                return self._bg_cache[cache_key]
+
+            raw_img = pygame.image.load(target_path)
+            if pygame.display.get_surface() is not None:
+                img = raw_img.convert()
+            else:
+                img = raw_img
+            scaled = pygame.transform.scale(img, (width, height))
+            if not hasattr(self, "_bg_cache"):
+                self._bg_cache = {}
+            self._bg_cache[cache_key] = scaled
+            return scaled
+        except Exception:
+            return None
+
+    def _get_background_image(
+        self, width: int, height: int
+    ) -> pygame.Surface | None:
+        """Load and cache the scaled menu background image."""
+        try:
+            bg_path = (
+                self.background_asset
+                if self.background_asset is not None
+                else self.asset_manager.get_background()
+            )
+            if not isinstance(bg_path, str) or not bg_path:
+                return None
+            return self._load_scaled_image(bg_path, width, height)
+        except Exception:
+            return None
+
+    def _get_victory_background(
+        self, width: int, height: int
+    ) -> pygame.Surface | None:
+        """Load and cache the scaled victory background image."""
+        return self._load_scaled_image(
+            "assets/images/victory_background.jpg", width, height
+        )
+
+    def _get_game_over_background(
+        self, width: int, height: int
+    ) -> pygame.Surface | None:
+        """Load and cache the scaled game over background image."""
+        return self._load_scaled_image(
+            "assets/images/game_over_background.jpg", width, height
+        )
+
+    @staticmethod
+    def _draw_text_with_shadow(
+        surface: pygame.Surface,
+        font: pygame.font.Font,
+        text: str,
+        color: tuple[int, int, int],
+        pos: tuple[int, int],
+        shadow_color: tuple[int, int, int] = (0, 0, 0),
+        offset: tuple[int, int] = (2, 2),
+        center_x: bool = False,
+    ) -> None:
+        """Draw text with a drop shadow for high contrast."""
+        t_surf = font.render(text, True, color)
+        s_surf = font.render(text, True, shadow_color)
+        x, y = pos
+        if center_x:
+            x = x - t_surf.get_width() // 2
+        surface.blit(s_surf, (x + offset[0], y + offset[1]))
+        surface.blit(t_surf, (x, y))
+
+    def _render_menu_background(self, w: int, h: int) -> None:
+        """Render the background image or fallback solid color."""
+        bg_surf = self._get_background_image(w, h)
+        if bg_surf is not None:
+            self.surface.blit(bg_surf, (0, 0))
+        else:
+            self.surface.fill((10, 10, 25))
+
+    def _draw_menu_options(
+        self,
+        card_x: int,
+        card_y: int,
+        opt_font: pygame.font.Font,
+        options: list[str],
+    ) -> None:
+        """Render selectable menu items inside the menu card."""
+        for i, opt in enumerate(options):
+            is_selected = i == self.menu_selection
+            color = (255, 255, 60) if is_selected else (210, 210, 210)
+            prefix = "> " if is_selected else "  "
+            self._draw_text_with_shadow(
+                self.surface,
+                opt_font,
+                f"{prefix}{opt}",
+                color,
+                (card_x + 60, card_y + 25 + i * 48),
+            )
+
+    def _draw_menu_footer(
+        self, w: int, h: int, footer_font: pygame.font.Font
+    ) -> None:
+        """Render navigation hints footer at bottom of menu."""
+        foot_w = 420
+        foot_box = pygame.Surface((foot_w, 36), pygame.SRCALPHA)
+        foot_box.fill((10, 10, 25, 180))
+        pygame.draw.rect(
+            foot_box, (80, 80, 120), (0, 0, foot_w, 36), 1, border_radius=8
+        )
+        self.surface.blit(foot_box, ((w - foot_w) // 2, h - 55))
+
+        foot = "UP/DOWN: Navigate | ENTER: Select"
+        self._draw_text_with_shadow(
+            self.surface,
+            footer_font,
+            foot,
+            (200, 200, 220),
+            (w // 2, h - 47),
+            center_x=True,
+        )
+
     def _render_menu(
         self, font: pygame.font.Font, header_font: pygame.font.Font | None
     ) -> None:
-        """Render main menu with navigable options."""
-        self.surface.fill((10, 10, 25))
+        """Render main menu with navigable options and background image."""
         w = self.surface.get_width()
         h = self.surface.get_height()
+        self._render_menu_background(w, h)
 
-        title_font = header_font or font
-        title = title_font.render("P A C - M A N", True, (255, 255, 0))
-        sub = font.render("42 School Project", True, (160, 160, 200))
+        title_font = self._get_font(52) or header_font or font
+        sub_font = self._get_font(22) or font
+        opt_font = self._get_font(26) or font
+        footer_font = self._get_font(18) or font
 
-        self.surface.blit(title, (w // 2 - title.get_width() // 2, 70))
-        self.surface.blit(sub, (w // 2 - sub.get_width() // 2, 115))
+        self._draw_text_with_shadow(
+            self.surface,
+            title_font,
+            "P A C - M A N",
+            (255, 220, 0),
+            (w // 2, 45),
+            center_x=True,
+        )
+        self._draw_text_with_shadow(
+            self.surface,
+            sub_font,
+            "42 School Project",
+            (240, 240, 255),
+            (w // 2, 115),
+            center_x=True,
+        )
 
         if self.menu_view == "highscores":
             self._render_highscores_view(font, w, h)
@@ -190,53 +353,104 @@ class UIRenderer(Renderer):
             "4. Exit",
         ]
 
-        start_y = 190
-        for i, opt in enumerate(options):
-            is_selected = i == self.menu_selection
-            color = (255, 255, 50) if is_selected else (200, 200, 200)
-            prefix = "> " if is_selected else "  "
-            text_surf = font.render(f"{prefix}{opt}", True, color)
-            self.surface.blit(text_surf, (w // 2 - 120, start_y + i * 45))
+        card_w, card_h = 480, 230
+        card_x = (w - card_w) // 2
+        card_y = 155
 
-        foot = "UP/DOWN: Navigate | ENTER: Select"
-        footer = font.render(foot, True, (120, 120, 160))
-        self.surface.blit(footer, (w // 2 - footer.get_width() // 2, h - 50))
+        card = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
+        card.fill((10, 10, 25, 205))
+        pygame.draw.rect(
+            card, (255, 180, 0), (0, 0, card_w, card_h), 2, border_radius=12
+        )
+        self.surface.blit(card, (card_x, card_y))
+
+        self._draw_menu_options(card_x, card_y, opt_font, options)
+        self._draw_menu_footer(w, h, footer_font)
 
     def _render_highscores_view(
         self, font: pygame.font.Font, w: int, h: int
     ) -> None:
-        """Render leaderboard view."""
-        hs_title = font.render(
-            "=== HALL OF FAME (TOP 10) ===", True, (0, 255, 255)
-        )
-        self.surface.blit(hs_title, (w // 2 - hs_title.get_width() // 2, 170))
+        """Render leaderboard view on top of menu background."""
+        card_w, card_h = 600, 480
+        card_x = (w - card_w) // 2
+        card_y = 150
 
-        start_y = 220
+        card = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
+        card.fill((10, 10, 25, 215))
+        pygame.draw.rect(
+            card, (0, 255, 255), (0, 0, card_w, card_h), 2, border_radius=12
+        )
+        self.surface.blit(card, (card_x, card_y))
+
+        title_f = self._get_font(22) or font
+        row_f = self._get_font(20) or font
+
+        self._draw_text_with_shadow(
+            self.surface,
+            title_f,
+            "=== HALL OF FAME (TOP 10) ===",
+            (0, 255, 255),
+            (w // 2, card_y + 20),
+            center_x=True,
+        )
+
+        start_y = card_y + 65
         if not self.highscores:
-            no_hs = font.render("No highscores yet!", True, (180, 180, 180))
-            no_hs_x = w // 2 - no_hs.get_width() // 2
-            self.surface.blit(no_hs, (no_hs_x, start_y))
+            self._draw_text_with_shadow(
+                self.surface,
+                row_f,
+                "No highscores yet!",
+                (180, 180, 180),
+                (w // 2, start_y + 20),
+                center_x=True,
+            )
         else:
             for idx, entry in enumerate(self.highscores[:10]):
                 name = entry.get("name", "PLAYER")
                 score = entry.get("score", 0)
                 row_str = f"#{idx + 1:2d}  {name:<10}  {score:>6d}"
-                row_surf = font.render(row_str, True, (255, 255, 255))
-                pos = (w // 2 - 140, start_y + idx * 28)
-                self.surface.blit(row_surf, pos)
+                self._draw_text_with_shadow(
+                    self.surface,
+                    row_f,
+                    row_str,
+                    (255, 255, 255),
+                    (card_x + 100, start_y + idx * 32),
+                )
 
-        back = font.render(
-            "Press ESC or ENTER to return", True, (120, 120, 160)
+        self._draw_text_with_shadow(
+            self.surface,
+            row_f,
+            "Press ESC or ENTER to return",
+            (160, 160, 200),
+            (w // 2, card_y + card_h - 40),
+            center_x=True,
         )
-        self.surface.blit(back, (w // 2 - back.get_width() // 2, h - 50))
 
     def _render_instructions_view(
         self, font: pygame.font.Font, w: int, h: int
     ) -> None:
-        """Render instructions view."""
-        inst_title = font.render("=== HOW TO PLAY ===", True, (0, 255, 255))
-        self.surface.blit(
-            inst_title, (w // 2 - inst_title.get_width() // 2, 160)
+        """Render instructions view on top of menu background."""
+        card_w, card_h = 680, 490
+        card_x = (w - card_w) // 2
+        card_y = 150
+
+        card = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
+        card.fill((10, 10, 25, 215))
+        pygame.draw.rect(
+            card, (0, 255, 255), (0, 0, card_w, card_h), 2, border_radius=12
+        )
+        self.surface.blit(card, (card_x, card_y))
+
+        title_f = self._get_font(22) or font
+        text_f = self._get_font(18) or font
+
+        self._draw_text_with_shadow(
+            self.surface,
+            title_f,
+            "=== HOW TO PLAY ===",
+            (0, 255, 255),
+            (w // 2, card_y + 18),
+            center_x=True,
         )
 
         lines = [
@@ -256,13 +470,22 @@ class UIRenderer(Renderer):
         ]
         for idx, line in enumerate(lines):
             color = (255, 220, 100) if line.endswith(":") else (200, 200, 200)
-            line_surf = font.render(line, True, color)
-            self.surface.blit(line_surf, (w // 2 - 240, 200 + idx * 24))
+            self._draw_text_with_shadow(
+                self.surface,
+                text_f,
+                line,
+                color,
+                (card_x + 40, card_y + 55 + idx * 26),
+            )
 
-        back = font.render(
-            "Press ESC or ENTER to return", True, (120, 120, 160)
+        self._draw_text_with_shadow(
+            self.surface,
+            text_f,
+            "Press ESC or ENTER to return",
+            (160, 160, 200),
+            (w // 2, card_y + card_h - 35),
+            center_x=True,
         )
-        self.surface.blit(back, (w // 2 - back.get_width() // 2, h - 50))
 
     def _render_pause_overlay(
         self, font: pygame.font.Font, header_font: pygame.font.Font | None
@@ -283,103 +506,260 @@ class UIRenderer(Renderer):
             sub_text, (w // 2 - sub_text.get_width() // 2, h // 2 + 20)
         )
 
+    def _draw_outcome_card(
+        self,
+        w: int,
+        h: int,
+        fill: tuple[int, int, int, int],
+        border: tuple[int, int, int],
+        inner: tuple[int, int, int],
+    ) -> int:
+        """Render frosted glass card at bottom and return its top-left Y."""
+        card_w = min(640, w - 40)
+        card_h = 135
+        card_x = (w - card_w) // 2
+        card_y = max(10, h - card_h - 25)
+
+        card = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
+        card.fill(fill)
+        pygame.draw.rect(
+            card, border, (0, 0, card_w, card_h), 2, border_radius=14
+        )
+        pygame.draw.rect(
+            card,
+            inner,
+            (2, 2, card_w - 4, card_h - 4),
+            1,
+            border_radius=12,
+        )
+        self.surface.blit(card, (card_x, card_y))
+        return card_y
+
     def _render_game_over(
         self, font: pygame.font.Font, header_font: pygame.font.Font | None
     ) -> None:
-        """Render Game Over screen."""
-        self.surface.fill((25, 10, 10))
+        """Render Game Over screen with themed artwork and UI card."""
+        self.last_outcome = "game_over"
         w = self.surface.get_width()
         h = self.surface.get_height()
 
-        title_font = header_font or font
-        go_text = title_font.render("G A M E   O V E R", True, (255, 50, 50))
-        sc_str = f"Final Score: {self.score}"
-        score_text = font.render(sc_str, True, (255, 255, 255))
-        prompt_str = "Press ENTER to continue | ESC for Menu"
-        prompt = font.render(prompt_str, True, (200, 200, 200))
+        bg_surf = self._get_game_over_background(w, h)
+        if bg_surf is not None:
+            self.surface.blit(bg_surf, (0, 0))
+        else:
+            self.surface.fill((25, 10, 10))
 
-        self.surface.blit(
-            go_text, (w // 2 - go_text.get_width() // 2, h // 2 - 60)
+        card_y = self._draw_outcome_card(
+            w, h, (26, 12, 16, 225), (255, 70, 70), (200, 40, 40)
         )
-        self.surface.blit(
-            score_text, (w // 2 - score_text.get_width() // 2, h // 2 - 10)
+
+        title_font = self._get_font(26) or header_font or font
+        info_font = self._get_font(19) or font
+        action_font = self._get_font(17) or font
+
+        self._draw_text_with_shadow(
+            self.surface,
+            title_font,
+            "G A M E   O V E R",
+            (255, 70, 70),
+            (w // 2, card_y + 14),
+            center_x=True,
         )
-        self.surface.blit(
-            prompt, (w // 2 - prompt.get_width() // 2, h // 2 + 40)
+
+        sub_str = (
+            f"Level Reached: {self.level_number}   |   "
+            f"FINAL SCORE: {self.score}"
+        )
+        self._draw_text_with_shadow(
+            self.surface,
+            info_font,
+            sub_str,
+            (255, 200, 200),
+            (w // 2, card_y + 54),
+            center_x=True,
+        )
+
+        prompt_str = (
+            "[ ENTER: Enter Name & Save Score ]       [ ESC: Main Menu ]"
+        )
+        self._draw_text_with_shadow(
+            self.surface,
+            action_font,
+            prompt_str,
+            (255, 255, 255),
+            (w // 2, card_y + 94),
+            center_x=True,
         )
 
     def _render_victory(
         self, font: pygame.font.Font, header_font: pygame.font.Font | None
     ) -> None:
-        """Render Victory screen."""
-        self.surface.fill((10, 25, 15))
+        """Render Victory screen with themed artwork and UI card."""
+        self.last_outcome = "victory"
         w = self.surface.get_width()
         h = self.surface.get_height()
 
-        title_font = header_font or font
-        vic_text = title_font.render("V I C T O R Y !", True, (50, 255, 50))
-        cong_str = "You completed all maze levels!"
-        cong_text = font.render(cong_str, True, (220, 255, 220))
-        score_text = font.render(
-            f"Final Score: {self.score}", True, (255, 255, 255)
-        )
-        prompt_str = "Press ENTER to save score | ESC for Menu"
-        prompt = font.render(prompt_str, True, (200, 200, 200))
+        bg_surf = self._get_victory_background(w, h)
+        if bg_surf is not None:
+            self.surface.blit(bg_surf, (0, 0))
+        else:
+            self.surface.fill((10, 25, 15))
 
-        self.surface.blit(
-            vic_text, (w // 2 - vic_text.get_width() // 2, h // 2 - 70)
+        card_y = self._draw_outcome_card(
+            w, h, (10, 22, 28, 225), (50, 255, 120), (255, 215, 0)
         )
-        self.surface.blit(
-            cong_text, (w // 2 - cong_text.get_width() // 2, h // 2 - 25)
+
+        title_font = self._get_font(26) or header_font or font
+        info_font = self._get_font(19) or font
+        action_font = self._get_font(17) or font
+
+        self._draw_text_with_shadow(
+            self.surface,
+            title_font,
+            "* * *   V I C T O R Y !   * * *",
+            (255, 215, 0),
+            (w // 2, card_y + 14),
+            center_x=True,
         )
-        self.surface.blit(
-            score_text, (w // 2 - score_text.get_width() // 2, h // 2 + 15)
+
+        sub_str = (
+            f"All Maze Levels Conquered!   |   "
+            f"FINAL SCORE: {self.score}"
         )
-        self.surface.blit(
-            prompt, (w // 2 - prompt.get_width() // 2, h // 2 + 60)
+        self._draw_text_with_shadow(
+            self.surface,
+            info_font,
+            sub_str,
+            (180, 255, 200),
+            (w // 2, card_y + 54),
+            center_x=True,
+        )
+
+        prompt_str = (
+            "[ ENTER: Enter Name & Save Score ]       [ ESC: Main Menu ]"
+        )
+        self._draw_text_with_shadow(
+            self.surface,
+            action_font,
+            prompt_str,
+            (255, 255, 255),
+            (w // 2, card_y + 94),
+            center_x=True,
+        )
+
+    def _draw_name_input_box(
+        self, card_w: int, card_y: int, w: int, font: pygame.font.Font
+    ) -> None:
+        """Render text entry box for player name input."""
+        box_w, box_h = min(320, card_w - 60), 44
+        box_x = (w - box_w) // 2
+        box_y = card_y + 144
+        box_rect = pygame.Rect(box_x, box_y, box_w, box_h)
+
+        input_bg = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+        input_bg.fill((25, 30, 50, 220))
+        self.surface.blit(input_bg, (box_x, box_y))
+        pygame.draw.rect(
+            self.surface, (0, 255, 255), box_rect, 2, border_radius=6
+        )
+
+        input_text = f"{self.name_input}_"
+        self._draw_text_with_shadow(
+            self.surface,
+            font,
+            input_text,
+            (255, 255, 255),
+            (box_x + 16, box_y + 11),
         )
 
     def _render_enter_name(
         self, font: pygame.font.Font, header_font: pygame.font.Font | None
     ) -> None:
-        """Render Name Entry screen."""
-        self.surface.fill((15, 15, 30))
+        """Render Name Entry screen with themed backdrop and frosted card."""
         w = self.surface.get_width()
         h = self.surface.get_height()
 
-        title_font = header_font or font
-        rec_text = title_font.render("RECORD HIGH SCORE", True, (255, 215, 0))
-        sc_str = f"Your Score: {self.score}"
-        score_text = font.render(sc_str, True, (255, 255, 255))
+        bg_surf = (
+            self._get_victory_background(w, h)
+            if self.last_outcome == "victory"
+            else self._get_game_over_background(w, h)
+        )
+        if bg_surf is not None:
+            self.surface.blit(bg_surf, (0, 0))
+        else:
+            self.surface.fill((15, 15, 30))
+
+        # Centered frosted glass card
+        card_w = min(560, w - 40)
+        card_h = 280
+        card_x = (w - card_w) // 2
+        card_y = (h - card_h) // 2
+
+        card = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
+        card.fill((16, 18, 32, 235))
+        pygame.draw.rect(
+            card, (0, 255, 255), (0, 0, card_w, card_h), 2, border_radius=14
+        )
+        pygame.draw.rect(
+            card,
+            (255, 215, 0),
+            (2, 2, card_w - 4, card_h - 4),
+            1,
+            border_radius=12,
+        )
+        self.surface.blit(card, (card_x, card_y))
+
+        title_font = self._get_font(26) or header_font or font
+        info_font = self._get_font(20) or font
+        label_font = self._get_font(18) or font
+        footer_font = self._get_font(16) or font
+
+        self._draw_text_with_shadow(
+            self.surface,
+            title_font,
+            "RECORD HIGH SCORE",
+            (255, 215, 0),
+            (w // 2, card_y + 20),
+            center_x=True,
+        )
+
+        sc_str = f"FINAL SCORE: {self.score}"
+        self._draw_text_with_shadow(
+            self.surface,
+            info_font,
+            sc_str,
+            (255, 255, 255),
+            (w // 2, card_y + 62),
+            center_x=True,
+        )
+
         prompt_str = "Enter Name (max 10 chars):"
-        prompt = font.render(prompt_str, True, (200, 200, 255))
-
-        # Input box
-        box_rect = pygame.Rect(w // 2 - 150, h // 2 + 10, 300, 40)
-        pygame.draw.rect(self.surface, (30, 30, 60), box_rect)
-        pygame.draw.rect(self.surface, (0, 255, 255), box_rect, 2)
-
-        input_text = font.render(f"{self.name_input}_", True, (255, 255, 255))
-        self.surface.blit(input_text, (box_rect.x + 15, box_rect.y + 10))
-
-        footer_str = "ENTER: Submit | ESC: Skip"
-        footer = font.render(footer_str, True, (140, 140, 180))
-
-        self.surface.blit(
-            rec_text, (w // 2 - rec_text.get_width() // 2, h // 2 - 80)
+        self._draw_text_with_shadow(
+            self.surface,
+            label_font,
+            prompt_str,
+            (200, 240, 255),
+            (w // 2, card_y + 102),
+            center_x=True,
         )
-        self.surface.blit(
-            score_text, (w // 2 - score_text.get_width() // 2, h // 2 - 40)
-        )
-        self.surface.blit(
-            prompt, (w // 2 - prompt.get_width() // 2, h // 2 - 15)
-        )
-        self.surface.blit(
-            footer, (w // 2 - footer.get_width() // 2, h // 2 + 70)
+
+        self._draw_name_input_box(card_w, card_y, w, label_font)
+
+        footer_str = "[ ENTER: Submit & Save ]       [ ESC: Skip ]"
+        self._draw_text_with_shadow(
+            self.surface,
+            footer_font,
+            footer_str,
+            (170, 190, 225),
+            (w // 2, card_y + 228),
+            center_x=True,
         )
 
     def shutdown(self) -> None:
         """Shut down the user-interface renderer."""
         self.menu_font_asset = None
         self.game_font_asset = None
+        self.background_asset = None
+        if hasattr(self, "_bg_cache"):
+            self._bg_cache.clear()
         self.is_initialized = False

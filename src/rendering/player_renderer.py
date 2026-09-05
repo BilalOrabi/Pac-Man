@@ -62,6 +62,20 @@ class PlayerRenderer(Renderer):
         if self.surface is not None and self.player is not None:
             self._render_to_surface()
 
+    def _resolve_frame_path(
+        self, dir_folder: str, frame_idx: int
+    ) -> str | None:
+        """Resolve filesystem path for the animated player frame."""
+        path = os.path.join("assets", "images", dir_folder, f"{frame_idx}.png")
+        if os.path.exists(path):
+            return path
+        if (
+            self.player_sprite_asset
+            and os.path.exists(self.player_sprite_asset)
+        ):
+            return self.player_sprite_asset
+        return None
+
     def _get_player_frame(self) -> Any:
         """Load and return the appropriate directional animated frame."""
         try:
@@ -85,26 +99,35 @@ class PlayerRenderer(Renderer):
             if cache_key in self._frame_cache:
                 return self._frame_cache[cache_key]
 
-            path = os.path.join(
-                "assets", "images", dir_folder, f"{frame_idx}.png"
-            )
-            if not os.path.exists(path):
-                if (
-                    self.player_sprite_asset
-                    and os.path.exists(self.player_sprite_asset)
-                ):
-                    path = self.player_sprite_asset
-                else:
-                    return None
+            path = self._resolve_frame_path(dir_folder, frame_idx)
+            if path is None:
+                return None
 
             img = pygame.image.load(path).convert_alpha()
-            scaled = pygame.transform.scale(
-                img, (sprite_size, sprite_size)
-            )
+            try:
+                scaled = pygame.transform.smoothscale(
+                    img, (sprite_size, sprite_size)
+                )
+            except Exception:
+                scaled = pygame.transform.scale(
+                    img, (sprite_size, sprite_size)
+                )
             self._frame_cache[cache_key] = scaled
             return scaled
         except Exception:
             return None
+
+    def _render_fallback_circle(self, px: int, py: int) -> None:
+        """Draw classic yellow circle when sprite image is unavailable."""
+        center_x = px + self.cell_size // 2
+        center_y = py + self.cell_size // 2
+        radius = max(3, self.cell_size // 2 - 2)
+        color = (
+            (255, 255, 128)
+            if self.player and self.player.is_powered_up
+            else (255, 255, 0)
+        )
+        pygame.draw.circle(self.surface, color, (center_x, center_y), radius)
 
     def _render_to_surface(self) -> None:
         """Draw Pac-Man to the destination Pygame surface."""
@@ -127,16 +150,7 @@ class PlayerRenderer(Renderer):
             self.surface.blit(sprite, (px, py))
             return
 
-        # Fallback to classic yellow circle
-        center_x = px + self.cell_size // 2
-        center_y = py + self.cell_size // 2
-        radius = max(3, self.cell_size // 2 - 2)
-        color = (
-            (255, 255, 128)
-            if self.player.is_powered_up
-            else (255, 255, 0)
-        )
-        pygame.draw.circle(self.surface, color, (center_x, center_y), radius)
+        self._render_fallback_circle(px, py)
 
     def shutdown(self) -> None:
         """Shut down the player renderer."""
