@@ -63,26 +63,36 @@ class AssetManager:
         music_paths = {
             "menu": self.assets.menu_music,
             "game": self.assets.game_music,
+            "game_start": self.assets.game_music,
+            "invincibility": self.assets.invincibility_music,
+            "game_over": self.assets.game_over_music,
+            "victory": self.assets.victory_music,
         }
         return self._lookup_asset(music_paths, music_type, "music type")
 
     def get_sound(self, sound_type: str) -> str:
         """Return a configured sound-effect asset path."""
         sound_paths = {
-            "pacgum": self.assets.pacgum_sound,
             "super_pacgum": self.assets.super_pacgum_sound,
-            "ghost_eaten": self.assets.ghost_eaten_sound,
+            "ghost_eaten": self.assets.ghost_eaten_1_sound,
+            "ghost_eaten_1": self.assets.ghost_eaten_1_sound,
+            "ghost_eaten_2": self.assets.ghost_eaten_2_sound,
+            "ghost_eaten_3": self.assets.ghost_eaten_3_sound,
+            "ghost_eaten_4": self.assets.ghost_eaten_4_sound,
             "death": self.assets.death_sound,
+            "cheat_freeze": self.assets.cheat_freeze_sound,
+            "cheat_speed": self.assets.cheat_speed_sound,
+            "cheat_extra_life": self.assets.cheat_extra_life_sound,
         }
         return self._lookup_asset(sound_paths, sound_type, "sound type")
 
     def get_effect(self, effect_type: str) -> str:
         """Return a configured visual-effect asset path."""
-        effect_paths = {
-            "power_mode": self.assets.power_mode_effect,
-            "death": self.assets.death_effect,
-        }
-        return self._lookup_asset(effect_paths, effect_type, "effect type")
+        self._require_initialization()
+        valid_effects = {"power_mode", "death"}
+        if effect_type.lower() not in valid_effects:
+            raise ValueError(f"Unknown effect type: {effect_type}")
+        return ""
 
     def shutdown(self) -> None:
         """Shut down the asset manager."""

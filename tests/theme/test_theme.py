@@ -45,25 +45,23 @@ def test_theme_contains_default_font_assets() -> None:
 
 
 def test_theme_contains_default_audio_assets() -> None:
-    """Theme should define placeholder audio asset paths."""
+    """Theme should define default audio asset paths."""
     theme = Theme()
 
-    assert theme.audio.background_music_path == (
-        "assets/audio/background_music.ogg"
+    assert theme.audio.menu_music_path == (
+        "assets/audio/main menu music.ogg"
     )
-
-    assert theme.audio.pacgum_sound_path == (
-        "assets/audio/pacgum.wav"
+    assert theme.audio.super_pacgum_sound_path == (
+        "assets/audio/supergum eating sound.mp3"
     )
 
 
 def test_theme_contains_default_effect_assets() -> None:
-    """Theme should define placeholder visual-effect paths."""
+    """Theme should provide default effect configuration."""
     theme = Theme()
 
-    assert theme.effects.power_mode_effect_path == (
-        "assets/effects/power_mode_effect.png"
-    )
+    assert theme.effects.power_mode_effect_path == ""
+    assert theme.effects.death_effect_path == ""
 
 
 def test_theme_allows_custom_assets() -> None:
@@ -80,12 +78,10 @@ def test_theme_allows_custom_assets() -> None:
     )
 
     custom_audio = AudioAssets(
-        background_music_path="custom/music.ogg",
-        pacgum_sound_path="custom/pacgum.wav",
-        super_pacgum_sound_path="custom/super.wav",
-        ghost_eaten_sound_path="custom/ghost.wav",
-        game_over_sound_path="custom/game_over.wav",
-        victory_sound_path="custom/victory.wav",
+        menu_music_path="custom/menu.ogg",
+        game_music_path="custom/game.ogg",
+        super_pacgum_sound_path="custom/super.mp3",
+        death_sound_path="custom/death.mp3",
     )
 
     custom_effects = EffectAssets(
@@ -102,7 +98,7 @@ def test_theme_allows_custom_assets() -> None:
 
     assert theme.images.player_path == "custom/player.png"
     assert theme.fonts.game_font_path == "custom/game.ttf"
-    assert theme.audio.pacgum_sound_path == "custom/pacgum.wav"
+    assert theme.audio.menu_music_path == "custom/menu.ogg"
     assert theme.effects.death_effect_path == "custom/death.png"
 
 

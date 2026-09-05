@@ -31,26 +31,33 @@ def test_audio_assets_are_defined() -> None:
     """Required audio assets should be available."""
     assets = AssetPaths()
 
-    assert assets.menu_music == "assets/audio/menu_music.ogg"
-    assert assets.game_music == "assets/audio/game_music.ogg"
-    assert assets.pacgum_sound == "assets/audio/pacgum.wav"
+    assert assets.menu_music in (
+        "assets/audio/main menu music.ogg",
+        "assets/audio/menu music.mp3",
+    )
+    assert assets.game_music == "assets/audio/start of game music.ogg"
+    assert assets.game_start_music == "assets/audio/start of game music.ogg"
+    assert assets.invincibility_music == (
+        "assets/audio/Invincibility cheat ON music.mp3"
+    )
     assert assets.super_pacgum_sound == (
-        "assets/audio/super_pacgum.wav"
+        "assets/audio/supergum eating sound.mp3"
     )
-    assert assets.ghost_eaten_sound == (
-        "assets/audio/ghost_eaten.wav"
-    )
-    assert assets.death_sound == "assets/audio/death.wav"
+    assert assets.ghost_eaten_1_sound == "assets/audio/kill ghost 1.ogg"
+    assert assets.death_sound == "assets/audio/death music.mp3"
 
 
-def test_effect_assets_are_defined() -> None:
-    """Visual effect assets should be available."""
+def test_cheat_sound_assets_are_defined() -> None:
+    """Cheat audio assets should be available."""
     assets = AssetPaths()
 
-    assert assets.power_mode_effect == (
-        "assets/effects/power_mode.effect"
+    assert assets.cheat_freeze_sound == (
+        "assets/audio/freeze cheat ON sound.ogg"
     )
-    assert assets.death_effect == "assets/effects/death.effect"
+    assert assets.cheat_speed_sound == "assets/audio/speed.ogg"
+    assert assets.cheat_extra_life_sound == (
+        "assets/audio/Lives inscress sound.mp3"
+    )
 
 
 def test_default_assets_is_asset_paths_instance() -> None:

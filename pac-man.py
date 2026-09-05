@@ -19,6 +19,7 @@ from src.input.input_event import InputAction
 from src.input.input_system import InputSystem
 from src.maze.adapter import MazeAdapter
 from src.persistence.persistence_manager import PersistenceManager
+from src.rendering.audio_presenter import AudioPresenter
 from src.rendering.game_renderer import GameRenderer
 from src.rendering.ghost_renderer import GhostRenderer
 from src.rendering.maze_renderer import MazeRenderer
@@ -123,6 +124,7 @@ def build_game_systems(
     CheatSystem,
     HighscoreManager,
     PersistenceManager,
+    AudioPresenter,
 ]:
     """Build and wire all game dependencies."""
     persistence = PersistenceManager("highscores.json")
@@ -133,7 +135,9 @@ def build_game_systems(
         if os.path.exists("assets/images/background.jpg")
         else "assets/images/background.png"
     )
-    asset_paths = AssetPaths(background=bg_asset)
+    asset_paths = AssetPaths(
+        background=bg_asset,
+    )
     asset_manager = AssetManager(assets=asset_paths)
     asset_manager.initialize()
 
@@ -205,6 +209,8 @@ def build_game_systems(
     main_loop = MainGameLoop(game_coordinator=game_coordinator)
     main_loop.start()
 
+    audio_presenter = AudioPresenter(asset_manager=asset_manager)
+
     return (
         game_world,
         game_coordinator,
@@ -213,6 +219,7 @@ def build_game_systems(
         cheat_system,
         highscore_mgr,
         persistence,
+        audio_presenter,
     )
 
 
@@ -253,6 +260,7 @@ def _handle_menu_key(
     coordinator: GameCoordinator,
     main_loop: MainGameLoop,
     ui_renderer: UIRenderer,
+    audio_presenter: AudioPresenter,
 ) -> None:
     """Handle keyboard interaction in MENU state."""
     if ui_renderer.menu_view != "main":
@@ -267,6 +275,7 @@ def _handle_menu_key(
     elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
         if ui_renderer.menu_selection == 0:
             coordinator.start_game()
+            audio_presenter.play_music("game_start", loops=0)
         elif ui_renderer.menu_selection == 1:
             ui_renderer.menu_view = "highscores"
         elif ui_renderer.menu_selection == 2:
@@ -275,6 +284,7 @@ def _handle_menu_key(
             main_loop.stop()
     elif event.key == pygame.K_1:
         coordinator.start_game()
+        audio_presenter.play_music("game_start", loops=0)
     elif event.key == pygame.K_2:
         ui_renderer.menu_view = "highscores"
     elif event.key == pygame.K_3:
@@ -288,24 +298,37 @@ def _handle_playing_key(
     coordinator: GameCoordinator,
     main_loop: MainGameLoop,
     cheat_system: CheatSystem,
+    audio_presenter: AudioPresenter,
 ) -> None:
     """Handle keyboard interaction in PLAYING state."""
     if event.key == pygame.K_1:
         cheat_system.toggle_invincibility()
+        if cheat_system.is_invincible:
+            audio_presenter.play_music("invincibility", loops=-1)
+        elif audio_presenter.current_music_track == "invincibility":
+            audio_presenter.stop_music()
         return
     if event.key == pygame.K_2:
+        was_frozen = cheat_system.is_ghosts_frozen
         cheat_system.toggle_ghost_freeze()
+        if not was_frozen and cheat_system.is_ghosts_frozen:
+            audio_presenter.play_cheat_freeze()
         return
     if event.key == pygame.K_3:
+        was_boosted = cheat_system.is_speed_boosted
         cheat_system.toggle_speed_boost()
+        if not was_boosted and cheat_system.is_speed_boosted:
+            audio_presenter.play_cheat_speed()
         return
     if event.key == pygame.K_4:
         level = coordinator.game_world.current_level
         if level and level.player:
             level.player.lives += 1
+            audio_presenter.play_cheat_extra_life()
         return
     if event.key == pygame.K_5:
         cheat_system.trigger_level_skip()
+        audio_presenter.play_music("game_start", loops=0)
         return
 
     movement_map = {
@@ -333,6 +356,7 @@ def handle_key_events(
     cheat_system: CheatSystem,
     highscore_mgr: HighscoreManager,
     persistence: PersistenceManager,
+    audio_presenter: AudioPresenter,
 ) -> None:
     """Handle keyboard interaction based on current game state."""
     state = coordinator.state_machine.current_state
@@ -342,9 +366,13 @@ def handle_key_events(
             event, coordinator, ui_renderer, highscore_mgr, persistence
         )
     elif state is GameStateType.MENU:
-        _handle_menu_key(event, coordinator, main_loop, ui_renderer)
+        _handle_menu_key(
+            event, coordinator, main_loop, ui_renderer, audio_presenter
+        )
     elif state is GameStateType.PLAYING:
-        _handle_playing_key(event, coordinator, main_loop, cheat_system)
+        _handle_playing_key(
+            event, coordinator, main_loop, cheat_system, audio_presenter
+        )
     elif state is GameStateType.PAUSED:
         if event.key in (pygame.K_p, pygame.K_ESCAPE):
             main_loop.process_action(InputAction.PAUSE_GAME)
@@ -398,6 +426,27 @@ def sync_ui(
         ui_renderer.last_outcome = "game_over"
 
 
+def sync_audio(
+    audio_presenter: AudioPresenter,
+    coordinator: GameCoordinator,
+    cheat_system: CheatSystem,
+) -> None:
+    """Synchronize presentation audio with game events and states."""
+    cur_state = coordinator.state_machine.current_state.name
+    gameplay = coordinator.gameplay_controller
+    invincibility = cheat_system.is_invincible
+    audio_presenter.sync_music_state(cur_state, invincibility)
+
+    if gameplay is not None:
+        for event in gameplay.pop_audio_events():
+            if event == "super_pacgum":
+                audio_presenter.play_super_pacgum()
+            elif event == "ghost_eaten":
+                audio_presenter.play_ghost_eaten()
+            elif event == "death":
+                audio_presenter.play_death()
+
+
 def run_game(config: GameConfig) -> None:
     """Initialize Pygame presentation and run the 60 FPS loop."""
     (
@@ -408,10 +457,12 @@ def run_game(config: GameConfig) -> None:
         cheat_system,
         highscore_mgr,
         persistence,
+        audio_presenter,
     ) = build_game_systems(config)
 
     pygame.init()
     pygame.font.init()
+    audio_presenter.initialize()
     pygame.display.set_caption("42 Pac-Man")
 
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -431,10 +482,12 @@ def run_game(config: GameConfig) -> None:
                     cheat_system,
                     highscore_mgr,
                     persistence,
+                    audio_presenter,
                 )
 
         dt = min(clock.tick(60) / 1000.0, 0.05)
         sync_ui(ui_renderer, coordinator, cheat_system, config)
+        sync_audio(audio_presenter, coordinator, cheat_system)
 
         main_loop.update(dt)
 
@@ -442,6 +495,7 @@ def run_game(config: GameConfig) -> None:
         main_loop.render()
         pygame.display.flip()
 
+    audio_presenter.shutdown()
     save_persistent_highscores(persistence, highscore_mgr)
     coordinator.shutdown()
     pygame.quit()

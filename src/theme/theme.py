@@ -43,24 +43,30 @@ class ImageAssets:
 class AudioAssets:
     """Define audio assets used by the game."""
 
-    background_music_path: str = "assets/audio/background_music.ogg"
-    pacgum_sound_path: str = "assets/audio/pacgum.wav"
-    super_pacgum_sound_path: str = "assets/audio/super_pacgum.wav"
-    ghost_eaten_sound_path: str = "assets/audio/ghost_eaten.wav"
-    game_over_sound_path: str = "assets/audio/game_over.wav"
-    victory_sound_path: str = "assets/audio/victory.wav"
+    menu_music_path: str = "assets/audio/main menu music.ogg"
+    game_music_path: str = "assets/audio/start of game music.ogg"
+    invincibility_music_path: str = (
+        "assets/audio/Invincibility cheat ON music.mp3"
+    )
+    game_over_music_path: str = "assets/audio/gameover screen music.mp3"
+    victory_music_path: str = "assets/audio/victory music.mp3"
+    super_pacgum_sound_path: str = "assets/audio/supergum eating sound.mp3"
+    death_sound_path: str = "assets/audio/death music.mp3"
+    ghost_eaten_1_sound_path: str = "assets/audio/kill ghost 1.ogg"
+    ghost_eaten_2_sound_path: str = "assets/audio/kill ghost 2.ogg"
+    ghost_eaten_3_sound_path: str = "assets/audio/kill ghost 3.ogg"
+    ghost_eaten_4_sound_path: str = "assets/audio/kill ghost 4.ogg"
+    cheat_freeze_sound_path: str = "assets/audio/freeze cheat ON sound.ogg"
+    cheat_speed_sound_path: str = "assets/audio/speed.ogg"
+    cheat_extra_life_sound_path: str = "assets/audio/Lives inscress sound.mp3"
 
 
 @dataclass(frozen=True)
 class EffectAssets:
     """Define visual-effect assets used by the game."""
 
-    power_mode_effect_path: str = (
-        "assets/effects/power_mode_effect.png"
-    )
-    death_effect_path: str = (
-        "assets/effects/death_effect.png"
-    )
+    power_mode_effect_path: str = ""
+    death_effect_path: str = ""
 
 
 @dataclass(frozen=True)

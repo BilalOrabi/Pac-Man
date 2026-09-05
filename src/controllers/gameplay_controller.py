@@ -33,6 +33,13 @@ class GameplayController:
     ghost_timers: list[float] = field(default_factory=list)
     wave_timer: float = 0.0
     is_scatter_wave: bool = False
+    audio_events: list[str] = field(default_factory=list)
+
+    def pop_audio_events(self) -> list[str]:
+        """Drain and return queued audio event identifiers."""
+        events = list(self.audio_events)
+        self.audio_events.clear()
+        return events
 
     def _check_level_skip(self, level: Level) -> bool:
         """Process cheat level skip request if active."""
@@ -197,6 +204,7 @@ class GameplayController:
             )
             self.power_mode_system.activate()
             player.activate_power_mode()
+            self.audio_events.append("super_pacgum")
 
     def _update_wave_timer(self, player: Any, elapsed: float) -> None:
         """Advance Chase (20s) and Scatter (6s) wave cycles."""
@@ -364,6 +372,7 @@ class GameplayController:
         if can_eat:
             player.add_score(self.scoring_system.calculate_ghost_score())
             ghost.state = GhostState.RETURN_HOME
+            self.audio_events.append("ghost_eaten")
         elif ghost.state is GhostState.CHASE:
             invincible = (
                 self.cheat_system is not None
@@ -373,6 +382,7 @@ class GameplayController:
                 )
             )
             if not invincible:
+                self.audio_events.append("death")
                 if self.lives_system.remaining_lives > 0:
                     self.lives_system.lose_life()
                 if player.lives > 0:

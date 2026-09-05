@@ -5,7 +5,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Code style: flake8](https://img.shields.io/badge/code%20style-flake8-green.svg)](https://flake8.pycqa.org/)
 [![Type checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](http://mypy-lang.org/)
-[![Tests: pytest](https://img.shields.io/badge/tests-525%20passed-brightgreen.svg)](https://docs.pytest.org/)
+[![Tests: pytest](https://img.shields.io/badge/tests-525+%20passed-brightgreen.svg)](https://docs.pytest.org/)
 
 A full-featured, architecturally decoupled implementation of the classic **Pac-Man** arcade game.
 
@@ -28,12 +28,11 @@ All game logic—including entity movements, bitmask corridor collisions, ghost 
 - **Intelligent Ghost AI**: Differentiated ghost personalities (Red direct chase, Pink predictive ambush, Blue flanker, Orange cautious chaser) with Chase, Flee, and Return-Home states powered by BFS corridor shortest-path graph intelligence.
 - **Fault-Tolerant Configuration**: JSON parser supporting comments (`#` and `//`) with automatic safe default clamping for invalid or missing values.
 - **Native Fixed $1600 \times 900$ Display**: Single native widescreen resolution eliminating window stretching and OS resizing flicker, with mazes auto-scaled and centered.
-- **Custom Arabian Desert Theme**: Fully realized visual identity featuring Shemagh-clad Pac-Man with 4-directional 3-frame chomping animations, 42-capped ghost personalities, Arabian Date pellets, and glowing Dallah super-pellets powered by the decoupled `AssetManager`.
 - **Centralized Silent Logging**: All library warnings, dimensional clamping notices, and `stderr` streams route exclusively to `errors.log`, keeping terminal console output completely silent.
 - **Cheat Subsystem**: Real-time hotkeys for evaluation and debugging (Invincibility, Freeze Ghosts, Speed Boost, Extra Lives, Level Skip).
 - **Persistent High Scores**: Top 10 leaderboard persisted to JSON with flexible name validation (1 to 10 characters: uppercase, lowercase, digits, spaces).
-- **Theme & Asset Separation**: Visuals, fonts, and sounds are isolated through an `AssetManager` with procedural fallbacks.
-- **Platform Packaging**: Standalone distribution packaging for itch.io and Steam (`dist/pacman_release.zip`, 1.49 MB).
+- **Theme & Asset Separation**: Visuals, and sounds are isolated through an `AssetManager` with procedural fallbacks.
+- **Platform Packaging**: Standalone distribution packaging for itch.io (`dist/pacman_linux.zip`).
 
 ---
 
@@ -41,7 +40,7 @@ All game logic—including entity movements, bitmask corridor collisions, ghost 
 
 ### Prerequisites
 - Python 3.10 or higher.
-- [uv](https://docs.astral.sh/uv/) (recommended) or standard `pip`.
+- [uv](https://docs.astral.sh/uv/) Python package and project manager used to handle dependencies and virtual environments.
 
 ### Quick Start with `uv`
 ```bash
@@ -52,18 +51,6 @@ make install
 # 2. Run the game with the configuration file
 make run
 # or: uv run python pac-man.py config.json
-```
-
-### Quick Start with Standard Python
-```bash
-# 1. Create virtual environment and install dependencies
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-pip install libs/mazegenerator-2.1.0-py3-none-any.whl
-
-# 2. Run the game
-python pac-man.py config.json
 ```
 
 ### Controls

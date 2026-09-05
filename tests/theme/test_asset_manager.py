@@ -115,20 +115,30 @@ def test_unknown_font_type_is_rejected() -> None:
 
 
 @pytest.mark.parametrize(
-    ("music_type", "expected_path"),
+    ("music_type", "expected_candidates"),
     [
-        ("menu", "assets/audio/menu_music.ogg"),
-        ("game", "assets/audio/game_music.ogg"),
+        (
+            "menu",
+            (
+                "assets/audio/main menu music.ogg",
+                "assets/audio/menu music.mp3",
+            ),
+        ),
+        ("game", ("assets/audio/start of game music.ogg",)),
+        ("game_start", ("assets/audio/start of game music.ogg",)),
+        ("invincibility", ("assets/audio/Invincibility cheat ON music.mp3",)),
+        ("game_over", ("assets/audio/gameover screen music.mp3",)),
+        ("victory", ("assets/audio/victory music.mp3",)),
     ],
 )
 def test_get_music_returns_correct_asset(
     music_type: str,
-    expected_path: str,
+    expected_candidates: tuple[str, ...],
 ) -> None:
     """Music lookup should return the configured music asset."""
     asset_manager = create_asset_manager()
 
-    assert asset_manager.get_music(music_type) == expected_path
+    assert asset_manager.get_music(music_type) in expected_candidates
 
 
 def test_unknown_music_type_is_rejected() -> None:
@@ -142,10 +152,16 @@ def test_unknown_music_type_is_rejected() -> None:
 @pytest.mark.parametrize(
     ("sound_type", "expected_path"),
     [
-        ("pacgum", "assets/audio/pacgum.wav"),
-        ("super_pacgum", "assets/audio/super_pacgum.wav"),
-        ("ghost_eaten", "assets/audio/ghost_eaten.wav"),
-        ("death", "assets/audio/death.wav"),
+        ("super_pacgum", "assets/audio/supergum eating sound.mp3"),
+        ("ghost_eaten", "assets/audio/kill ghost 1.ogg"),
+        ("ghost_eaten_1", "assets/audio/kill ghost 1.ogg"),
+        ("ghost_eaten_2", "assets/audio/kill ghost 2.ogg"),
+        ("ghost_eaten_3", "assets/audio/kill ghost 3.ogg"),
+        ("ghost_eaten_4", "assets/audio/kill ghost 4.ogg"),
+        ("death", "assets/audio/death music.mp3"),
+        ("cheat_freeze", "assets/audio/freeze cheat ON sound.ogg"),
+        ("cheat_speed", "assets/audio/speed.ogg"),
+        ("cheat_extra_life", "assets/audio/Lives inscress sound.mp3"),
     ],
 )
 def test_get_sound_returns_correct_asset(
@@ -167,20 +183,14 @@ def test_unknown_sound_type_is_rejected() -> None:
 
 
 @pytest.mark.parametrize(
-    ("effect_type", "expected_path"),
-    [
-        ("power_mode", "assets/effects/power_mode.effect"),
-        ("death", "assets/effects/death.effect"),
-    ],
+    "effect_type",
+    ["power_mode", "death"],
 )
-def test_get_effect_returns_correct_asset(
-    effect_type: str,
-    expected_path: str,
-) -> None:
-    """Effect lookup should return the configured effect asset."""
+def test_get_effect_returns_empty_for_placeholder(effect_type: str) -> None:
+    """Effect lookup should return empty string when placeholder is removed."""
     asset_manager = create_asset_manager()
 
-    assert asset_manager.get_effect(effect_type) == expected_path
+    assert asset_manager.get_effect(effect_type) == ""
 
 
 def test_unknown_effect_type_is_rejected() -> None:
