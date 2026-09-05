@@ -11,7 +11,7 @@ A full-featured, architecturally decoupled implementation of the classic **Pac-M
 
 ---
 
-![Pac-Man Game Flow](docs/game_flow.gif)
+![Pac-Man Game Flow](./docs/game_flow.gif)
 
 ---
 
