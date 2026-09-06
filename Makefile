@@ -60,7 +60,11 @@ lint:
 
 test:
 	@echo "==> Running tests..."
-	uv run pytest
+	@if [ ! -d tests ]; then \
+		echo "==> No tests folder found; skipping tests."; \
+	else \
+		uv run pytest; \
+	fi
 
 package:
 	@echo "==> Packaging project for distribution..."
